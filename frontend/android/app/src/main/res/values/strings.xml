@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">ROYAL</string>
+    <string name="title_activity_main">ROYAL</string>
+    <string name="package_name">com.royalstarboys.app</string>
+    <string name="custom_url_scheme">com.royalstarboys.app</string>
+</resources>
