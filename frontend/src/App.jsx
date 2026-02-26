@@ -76,14 +76,16 @@ export default function App() {
                 {/* Admin only */}
                 <Route element={<AdminRoute />}>
                   <Route path="/members" element={<MembersPage />} />
-                  <Route path="/contributions" element={<ContributionsPage />} />
-                  <Route path="/loans" element={<LoansPage />} />
                   <Route path="/repayments" element={<RepaymentsPage />} />
                   <Route path="/ledger" element={<LedgerPage />} />
                   <Route path="/settings" element={<SettingsPage />} />
                 </Route>
 
-                {/* Member pages */}
+                {/* Shared pages */}
+                <Route path="/contributions" element={<ContributionsPage />} />
+                <Route path="/loans" element={<LoansPage />} />
+
+                {/* Member specific views */}
                 <Route path="/my-contributions" element={<MyContributionsPage />} />
                 <Route path="/my-loans" element={<MyLoansPage />} />
                 <Route path="/my-profile" element={<MyProfilePage />} />

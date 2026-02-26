@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react';
 import api from '../services/api';
-import { PlusCircle, X } from 'lucide-react';
+import { PlusCircle, X, CheckCircle, XCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useAuth } from '../context/AuthContext';
 
 const thisMonth = new Date().toISOString().slice(0, 7);
 
 export default function ContributionsPage() {
+    const { user } = useAuth();
+    const isAdmin = user?.role === 'admin';
     const [contribs, setContribs] = useState([]);
     const [members, setMembers] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -38,8 +41,18 @@ export default function ContributionsPage() {
     };
 
     const statusBadge = (s) => {
-        const map = { paid: 'badge-success', pending: 'badge-warning', missed: 'badge-danger' };
-        return <span className={`badge ${map[s]}`}>{s}</span>;
+        const map = { paid: 'badge-success', pending: 'badge-warning', missed: 'badge-danger', rejected: 'badge-outline' };
+        return <span className={`badge ${map[s] || 'badge-outline'}`}>{s}</span>;
+    };
+
+    const approve = async (id) => {
+        try { await api.post(`/contributions/${id}/approve`); toast.success('Contribution approved!'); fetchAll(); }
+        catch (err) { toast.error(err.response?.data?.message || 'Error'); }
+    };
+    const reject = async (id) => {
+        if (!confirm('Reject this contribution?')) return;
+        try { await api.post(`/contributions/${id}/reject`); toast.success('Contribution rejected'); fetchAll(); }
+        catch (err) { toast.error(err.response?.data?.message || 'Error'); }
     };
 
     return (
@@ -53,7 +66,7 @@ export default function ContributionsPage() {
                 {loading ? <div className="spinner-center"><div className="spinner" /></div> : (
                     <div className="table-wrap">
                         <table>
-                            <thead><tr><th>Member</th><th>Month</th><th>Amount</th><th>Status</th><th>Paid At</th><th>Notes</th></tr></thead>
+                            <thead><tr><th>Member</th><th>Month</th><th>Amount</th><th>Status</th><th>Paid At</th><th>Notes</th>{isAdmin && <th>Actions</th>}</tr></thead>
                             <tbody>
                                 {contribs.map(c => (
                                     <tr key={c.id}>
@@ -63,9 +76,23 @@ export default function ContributionsPage() {
                                         <td>{statusBadge(c.status)}</td>
                                         <td className="text-muted text-sm">{c.paid_at ? new Date(c.paid_at).toLocaleDateString('en-IN') : '—'}</td>
                                         <td className="text-muted text-sm">{c.notes || '—'}</td>
+                                        {isAdmin && (
+                                            <td>
+                                                {c.status === 'pending' ? (
+                                                    <div style={{ display: 'flex', gap: '.4rem' }}>
+                                                        <button onClick={() => approve(c.id)} style={{ display: 'flex', alignItems: 'center', gap: '.3rem', padding: '.3rem .6rem', borderRadius: 7, background: 'rgba(16,185,129,.12)', border: '1px solid rgba(16,185,129,.25)', color: '#10b981', cursor: 'pointer', fontSize: '.78rem', fontWeight: 700, fontFamily: 'inherit' }} title="Approve">
+                                                            <CheckCircle size={13} /> Approve
+                                                        </button>
+                                                        <button onClick={() => reject(c.id)} style={{ display: 'flex', alignItems: 'center', gap: '.3rem', padding: '.3rem .6rem', borderRadius: 7, background: 'rgba(244,63,94,.08)', border: '1px solid rgba(244,63,94,.2)', color: '#f43f5e', cursor: 'pointer', fontSize: '.78rem', fontWeight: 700, fontFamily: 'inherit' }} title="Reject">
+                                                            <XCircle size={13} /> Reject
+                                                        </button>
+                                                    </div>
+                                                ) : <span className="text-muted text-sm">—</span>}
+                                            </td>
+                                        )}
                                     </tr>
                                 ))}
-                                {!contribs.length && <tr><td colSpan={6} style={{ textAlign: 'center', padding: '2rem', color: 'var(--text2)' }}>No contributions recorded yet</td></tr>}
+                                {!contribs.length && <tr><td colSpan={isAdmin ? 7 : 6} style={{ textAlign: 'center', padding: '2rem', color: 'var(--text2)' }}>No contributions recorded yet</td></tr>}
                             </tbody>
                         </table>
                     </div>

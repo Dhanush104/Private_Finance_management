@@ -1,11 +1,17 @@
 import { useState, useEffect } from 'react';
 import api from '../services/api';
-import { Save } from 'lucide-react';
+import { Save, Plus } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useAuth } from '../context/AuthContext';
 
 export default function SettingsPage() {
+    const { user } = useAuth();
+    const isAdmin = user?.role === 'admin';
     const [config, setConfig] = useState({ group_name: '', monthly_subscription: '', interest_rate: '' });
     const [saving, setSaving] = useState(false);
+
+    const [addForm, setAddForm] = useState({ amount: '', description: '' });
+    const [adding, setAdding] = useState(false);
 
     useEffect(() => {
         api.get('/group').then(r => setConfig({
@@ -26,6 +32,17 @@ export default function SettingsPage() {
             toast.success('Group settings updated!');
         } catch (err) { toast.error(err.response?.data?.message || 'Error'); }
         finally { setSaving(false); }
+    };
+
+    const handleAddFunds = async (e) => {
+        e.preventDefault();
+        setAdding(true);
+        try {
+            await api.post('/group/add-funds', { amount: Number(addForm.amount), description: addForm.description });
+            toast.success('Funds added successfully!');
+            setAddForm({ amount: '', description: '' });
+        } catch (err) { toast.error(err.response?.data?.message || 'Error'); }
+        finally { setAdding(false); }
     };
 
     return (
@@ -59,6 +76,30 @@ export default function SettingsPage() {
                         <button type="submit" className="btn btn-primary" disabled={saving}><Save size={16} />{saving ? 'Saving...' : 'Save Settings'}</button>
                     </form>
                 </div>
+
+                {isAdmin && (
+                    <div className="card mt-2">
+                        <h3 style={{ fontWeight: 700, marginBottom: '.75rem' }}>Add Funds to Group Pool</h3>
+                        <p className="text-muted text-sm mb-3">Manually inject capital into the group fund. This will be logged in the ledger.</p>
+                        <form onSubmit={handleAddFunds}>
+                            <div className="form-group">
+                                <label className="form-label">Amount (₹)</label>
+                                <input type="number" required min="1" step="1" className="form-control"
+                                    value={addForm.amount}
+                                    onChange={e => setAddForm({ ...addForm, amount: e.target.value })} />
+                            </div>
+                            <div className="form-group">
+                                <label className="form-label">Description / Source</label>
+                                <input required className="form-control" placeholder="e.g. Bank Interest, Late Fee Penalty Pool, etc."
+                                    value={addForm.description}
+                                    onChange={e => setAddForm({ ...addForm, description: e.target.value })} />
+                            </div>
+                            <button type="submit" className="btn btn-primary" style={{ background: '#10b981', borderColor: '#10b981' }} disabled={adding}>
+                                <Plus size={16} />{adding ? 'Adding...' : 'Add Funds'}
+                            </button>
+                        </form>
+                    </div>
+                )}
 
                 <div className="card mt-2">
                     <h3 style={{ fontWeight: 700, marginBottom: '.75rem' }}>Credit Score Rules</h3>

@@ -19,6 +19,8 @@ const adminLinks = [
 
 const memberLinks = [
     { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+    { to: '/contributions', icon: CreditCard, label: 'Contributions' },
+    { to: '/loans', icon: Banknote, label: 'Loans' },
     { to: '/my-contributions', icon: CreditCard, label: 'My Contributions' },
     { to: '/my-loans', icon: Banknote, label: 'My Loans' },
     { to: '/my-profile', icon: Users, label: 'My Profile' },

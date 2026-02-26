@@ -8,10 +8,15 @@ export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(() => JSON.parse(localStorage.getItem('rsb_user') || 'null'));
     const [token, setToken] = useState(() => localStorage.getItem('rsb_token') || null);
     const [loading, setLoading] = useState(false);
+    const [isInitialized, setIsInitialized] = useState(false);
 
     useEffect(() => {
-        if (token && !user) fetchMe();
-    }, []);
+        if (token && !user) {
+            fetchMe();
+        } else {
+            setIsInitialized(true);
+        }
+    }, [token, user]);
 
     const fetchMe = async () => {
         try {
@@ -20,6 +25,8 @@ export const AuthProvider = ({ children }) => {
             localStorage.setItem('rsb_user', JSON.stringify(data.user));
         } catch {
             logout();
+        } finally {
+            setIsInitialized(true);
         }
     };
 
@@ -46,7 +53,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     return (
-        <AuthContext.Provider value={{ user, token, loading, login, logout, isAdmin: user?.role === 'admin' }}>
+        <AuthContext.Provider value={{ user, token, loading, isInitialized, login, logout, isAdmin: user?.role === 'admin' }}>
             {children}
         </AuthContext.Provider>
     );
