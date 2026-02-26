@@ -1,5 +1,8 @@
 {
   "appId": "com.royalstarboys.app",
   "appName": "ROYAL",
-  "webDir": "dist"
+  "webDir": "dist",
+  "server": {
+    "url": "https://private-finanace-management-api.onrender.com"
+  }
 }
