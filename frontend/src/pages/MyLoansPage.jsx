@@ -2,10 +2,12 @@ import { useState, useEffect } from 'react';
 import api from '../services/api';
 import { Banknote, X, PlusCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useAuth } from '../context/AuthContext';
 
 const fmt = (n) => `₹${Number(n || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
 
 export default function MyLoansPage() {
+    const { user } = useAuth();
     const [loans, setLoans] = useState([]);
     const [loading, setLoading] = useState(true);
     const [modal, setModal] = useState(false);
@@ -17,7 +19,8 @@ export default function MyLoansPage() {
     const fetchAll = async () => {
         try {
             const [l, g] = await Promise.all([api.get('/loans'), api.get('/group')]);
-            setLoans(l.data.loans); setConfig(g.data.config);
+            setLoans(l.data.loans.filter(loan => loan.user_id === user?.id));
+            setConfig(g.data.config);
         } finally { setLoading(false); }
     };
     useEffect(() => { fetchAll(); }, []);
@@ -26,7 +29,8 @@ export default function MyLoansPage() {
         if (!config || !form.principal || !form.duration_months) { setPreview(null); return; }
         const P = Number(form.principal), R = config.interest_rate, T = Number(form.duration_months);
         const SI = (P * R * T) / 100;
-        setPreview({ interest: SI, total: P + SI });
+        const perMonth = (P * R) / 100;
+        setPreview({ interest: SI, total: P + SI, perMonth: perMonth });
     };
     useEffect(() => { calcPreview(); }, [form.principal, form.duration_months, config]);
 
@@ -61,9 +65,9 @@ export default function MyLoansPage() {
                                 {loans.map(l => (
                                     <tr key={l.id}>
                                         <td className="fw-600">{fmt(l.principal)}</td>
-                                        <td>{fmt(l.interest_amount)} <span className="text-muted text-sm">({l.interest_rate}%)</span></td>
-                                        <td>{fmt(l.total_payable)}</td>
-                                        <td><span style={{ fontWeight: 700, color: l.remaining_balance > 0 ? '#ef4444' : '#10b981' }}>{fmt(l.remaining_balance)}</span></td>
+                                        <td>{fmt(l.dynamic_interest_amount || l.interest_amount)} <span className="text-muted text-sm">({l.interest_rate}%)</span></td>
+                                        <td>{fmt(l.dynamic_total_payable || l.total_payable)}</td>
+                                        <td><span style={{ fontWeight: 700, color: (l.dynamic_remaining_balance || l.remaining_balance) > 0 ? '#ef4444' : '#10b981' }}>{fmt(l.dynamic_remaining_balance ?? l.remaining_balance)}</span></td>
                                         <td>{l.duration_months} mo.</td>
                                         <td className="text-muted text-sm">{l.due_date ? new Date(l.due_date).toLocaleDateString('en-IN') : '—'}</td>
                                         <td>{statusBadge(l.status)}</td>
@@ -103,7 +107,8 @@ export default function MyLoansPage() {
                                 <div style={{ background: 'var(--bg3)', borderRadius: 8, padding: '.75rem 1rem', marginBottom: '1rem', fontSize: '.875rem' }}>
                                     <div className="fw-600 mb-1">Loan Preview <span className="text-muted" style={{ fontWeight: 400 }}>(SI = P × R × T / 100)</span></div>
                                     <div className="flex gap-3"><span className="text-muted">Interest Rate:</span><strong>{config?.interest_rate}% per month</strong></div>
-                                    <div className="flex gap-3"><span className="text-muted">Interest Amount:</span><strong style={{ color: '#f59e0b' }}>{fmt(preview.interest)}</strong></div>
+                                    <div className="flex gap-3"><span className="text-muted">Per Month Interest:</span><strong style={{ color: '#8b5cf6' }}>{fmt(preview.perMonth)}</strong></div>
+                                    <div className="flex gap-3"><span className="text-muted">Total Interest Amount:</span><strong style={{ color: '#f59e0b' }}>{fmt(preview.interest)}</strong></div>
                                     <div className="flex gap-3"><span className="text-muted">Total Payable:</span><strong style={{ color: '#ef4444' }}>{fmt(preview.total)}</strong></div>
                                 </div>
                             )}

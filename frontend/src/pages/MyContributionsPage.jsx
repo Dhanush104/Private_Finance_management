@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import api from '../services/api';
 import { PlusCircle, X, CreditCard, CheckCircle, XCircle, Clock, TrendingUp, Calendar } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useAuth } from '../context/AuthContext';
 
 const fmt = (n) => `₹${Number(n || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
 const thisMonth = new Date().toISOString().slice(0, 7);
@@ -18,6 +19,7 @@ function StatusIcon({ status }) {
 }
 
 export default function MyContributionsPage() {
+    const { user } = useAuth();
     const [contribs, setContribs] = useState([]);
     const [stats, setStats] = useState({});
     const [loading, setLoading] = useState(true);
@@ -33,7 +35,7 @@ export default function MyContributionsPage() {
                 api.get('/dashboard/member'),
                 api.get('/group'),
             ]);
-            setContribs(c.data.contributions);
+            setContribs(c.data.contributions.filter(contribution => contribution.user_id === user?.id));
             setStats(d.data.dashboard.contribution_stats || {});
             setConfig(g.data.config);
             if (g.data.config) setForm(f => ({ ...f, amount: g.data.config.monthly_subscription }));

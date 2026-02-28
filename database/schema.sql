@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS group_config (
   monthly_subscription  DECIMAL(12,2)  NOT NULL DEFAULT 500.00,
   interest_rate         DECIMAL(5,2)   NOT NULL DEFAULT 5.00,  -- percent per month
   total_fund            DECIMAL(15,2)  NOT NULL DEFAULT 0.00,
+  announcement          TEXT           NULL,
   created_at            DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at            DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import api from '../services/api';
 import { useSocket } from '../context/SocketContext';
 import { useAuth } from '../context/AuthContext';
-import { TrendingUp, Banknote, CreditCard, Award, CheckCircle, Clock, AlertTriangle } from 'lucide-react';
+import { TrendingUp, Banknote, CreditCard, Award, CheckCircle, Clock, AlertTriangle, Bell } from 'lucide-react';
 
 const fmt = (n) => `₹${Number(n || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
 const scoreColor = (s) => s >= 750 ? '#10b981' : s >= 600 ? '#0ea5e9' : s >= 450 ? '#f59e0b' : '#f43f5e';
@@ -54,6 +54,20 @@ export default function MemberDashboard() {
 
     return (
         <div>
+            {data.announcement && (
+                <div style={{
+                    background: 'linear-gradient(90deg, #8b5cf6, #a855f7)', padding: '1rem',
+                    borderRadius: 12, color: '#fff', marginBottom: '1.5rem',
+                    display: 'flex', alignItems: 'center', gap: '1rem',
+                    boxShadow: '0 4px 15px rgba(139, 92, 246, 0.25)'
+                }}>
+                    <Bell size={24} />
+                    <div style={{ flex: 1, fontWeight: 500, fontSize: '.95rem', lineHeight: 1.4 }}>
+                        {data.announcement}
+                    </div>
+                </div>
+            )}
+
             {/* ── Hero Welcome Banner ── */}
             <div style={{
                 background: 'linear-gradient(135deg, rgba(14,165,233,.08), rgba(37,99,235,.12))',

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import api from '../services/api';
-import { CheckCircle, XCircle, Banknote, Clock, TrendingUp, AlertCircle, Filter } from 'lucide-react';
+import { CheckCircle, XCircle, Banknote, Clock, TrendingUp, AlertCircle, Filter, PlusCircle, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useSocket } from '../context/SocketContext';
 import { useAuth } from '../context/AuthContext';
@@ -18,10 +18,25 @@ export default function LoansPage() {
     const [loans, setLoans] = useState([]);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState('all');
+    const [modal, setModal] = useState(false);
+    const [members, setMembers] = useState([]);
+    const [config, setConfig] = useState(null);
+    const [form, setForm] = useState({ principal: '', duration_months: '1', purpose: '', user_id: '' });
+    const [saving, setSaving] = useState(false);
+    const [preview, setPreview] = useState(null);
     const socketRef = useSocket();
 
     const fetchLoans = async () => {
-        try { const r = await api.get('/loans'); setLoans(r.data.loans); }
+        try {
+            const [l, u, g] = await Promise.all([
+                api.get('/loans'),
+                api.get('/users'),
+                api.get('/group')
+            ]);
+            setLoans(l.data.loans);
+            setMembers(u.data.users.filter(usr => usr.role !== 'admin' || usr.id === user.id)); // Can request for self or members
+            setConfig(g.data.config);
+        }
         finally { setLoading(false); }
     };
     useEffect(() => { fetchLoans(); }, []);
@@ -58,6 +73,30 @@ export default function LoansPage() {
         ? Math.round(((l.total_payable - l.remaining_balance) / l.total_payable) * 100)
         : 0;
 
+    const calcPreview = () => {
+        if (!config || !form.principal || !form.duration_months) { setPreview(null); return; }
+        const P = Number(form.principal), R = config.interest_rate, T = Number(form.duration_months);
+        const SI = (P * R * T) / 100;
+        const perMonth = (P * R) / 100;
+        setPreview({ interest: SI, total: P + SI, perMonth: perMonth });
+    };
+    useEffect(() => { calcPreview(); }, [form.principal, form.duration_months, config]);
+
+    const handleSubmit = async (e) => {
+        e.preventDefault(); setSaving(true);
+        if (!form.user_id) {
+            toast.error('Please select a member');
+            setSaving(false);
+            return;
+        }
+        try {
+            await api.post('/loans', { principal: Number(form.principal), duration_months: Number(form.duration_months), purpose: form.purpose, user_id: Number(form.user_id) });
+            toast.success('Loan recorded! Awaiting your approval.');
+            setModal(false); setForm({ principal: '', duration_months: '1', purpose: '', user_id: '' }); fetchLoans();
+        } catch (err) { toast.error(err.response?.data?.message || 'Error'); }
+        finally { setSaving(false); }
+    };
+
     return (
         <div>
             {/* Header */}
@@ -66,6 +105,11 @@ export default function LoansPage() {
                     <h2 className="page-title">Loan Management</h2>
                     <p className="page-sub">Review, approve and track all member loans</p>
                 </div>
+                {isAdmin && (
+                    <button className="btn btn-primary" onClick={() => setModal(true)}>
+                        <PlusCircle size={16} /> Record Loan
+                    </button>
+                )}
             </div>
 
             {/* Summary stat cards */}
@@ -164,13 +208,13 @@ export default function LoansPage() {
                                             </td>
                                             <td className="fw-600">{fmt(l.principal)}</td>
                                             <td>
-                                                <span style={{ color: '#10b981', fontWeight: 600 }}>{fmt(l.interest_amount)}</span>
-                                                <span className="text-muted text-sm"> ({l.interest_rate}%)</span>
+                                                <span style={{ color: '#10b981', fontWeight: 600 }}>{fmt(l.dynamic_interest_amount ?? l.interest_amount)}</span>
+                                                <span className="text-muted text-sm"> ({l.interest_rate}%, {l.monthsElapsed ?? l.duration_months} mo.)</span>
                                             </td>
-                                            <td className="fw-600">{fmt(l.total_payable)}</td>
+                                            <td className="fw-600">{fmt(l.dynamic_total_payable ?? l.total_payable)}</td>
                                             <td>
-                                                <span className="fw-700" style={{ color: l.remaining_balance > 0 && l.status === 'active' ? '#f43f5e' : 'var(--text2)' }}>
-                                                    {fmt(l.remaining_balance)}
+                                                <span className="fw-700" style={{ color: (l.dynamic_remaining_balance ?? l.remaining_balance) > 0 && l.status === 'active' ? '#f43f5e' : 'var(--text2)' }}>
+                                                    {fmt(l.dynamic_remaining_balance ?? l.remaining_balance)}
                                                 </span>
                                             </td>
                                             {/* Repayment progress bar */}
@@ -223,6 +267,55 @@ export default function LoansPage() {
                     </div>
                 )}
             </div>
+
+            {modal && (
+                <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setModal(false)}>
+                    <div className="modal">
+                        <div className="modal-header">
+                            <span className="modal-title">Record a Loan</span>
+                            <button className="modal-close" onClick={() => setModal(false)}><X size={20} /></button>
+                        </div>
+                        <form onSubmit={handleSubmit}>
+                            <div className="form-group">
+                                <label className="form-label">Member *</label>
+                                <select required className="form-control" value={form.user_id} onChange={e => setForm({ ...form, user_id: e.target.value })}>
+                                    <option value="">Select a member...</option>
+                                    {members.map(m => (
+                                        <option key={m.id} value={m.id}>{m.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className="grid-2">
+                                <div className="form-group">
+                                    <label className="form-label">Principal Amount (₹) *</label>
+                                    <input type="number" required min="1" className="form-control" value={form.principal} onChange={e => setForm({ ...form, principal: e.target.value })} />
+                                </div>
+                                <div className="form-group">
+                                    <label className="form-label">Duration (months) *</label>
+                                    <input type="number" required min="1" max="60" className="form-control" value={form.duration_months} onChange={e => setForm({ ...form, duration_months: e.target.value })} />
+                                </div>
+                            </div>
+                            <div className="form-group">
+                                <label className="form-label">Purpose</label>
+                                <input className="form-control" value={form.purpose} onChange={e => setForm({ ...form, purpose: e.target.value })} placeholder="Brief reason for loan" />
+                            </div>
+                            {preview && (
+                                <div style={{ background: 'var(--bg3)', borderRadius: 8, padding: '.75rem 1rem', marginBottom: '1rem', fontSize: '.875rem' }}>
+                                    <div className="fw-600 mb-1">Loan Preview <span className="text-muted" style={{ fontWeight: 400 }}>(SI = P × R × T / 100)</span></div>
+                                    <div className="flex gap-3"><span className="text-muted">Interest Rate:</span><strong>{config?.interest_rate}% per month</strong></div>
+                                    <div className="flex gap-3"><span className="text-muted">Per Month Interest:</span><strong style={{ color: '#8b5cf6' }}>{fmt(preview.perMonth)}</strong></div>
+                                    <div className="flex gap-3"><span className="text-muted">Total Interest Amount:</span><strong style={{ color: '#f59e0b' }}>{fmt(preview.interest)}</strong></div>
+                                    <div className="flex gap-3"><span className="text-muted">Total Payable:</span><strong style={{ color: '#ef4444' }}>{fmt(preview.total)}</strong></div>
+                                </div>
+                            )}
+                            <div className="flex gap-2">
+                                <button type="button" className="btn btn-outline w-full" onClick={() => setModal(false)}>Cancel</button>
+                                <button type="submit" className="btn btn-primary w-full" disabled={saving}>{saving ? 'Recording...' : 'Record Request'}</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

@@ -7,17 +7,22 @@ import { useAuth } from '../context/AuthContext';
 export default function SettingsPage() {
     const { user } = useAuth();
     const isAdmin = user?.role === 'admin';
-    const [config, setConfig] = useState({ group_name: '', monthly_subscription: '', interest_rate: '' });
+    const [config, setConfig] = useState({ group_name: '', monthly_subscription: '', interest_rate: '', announcement: '' });
     const [saving, setSaving] = useState(false);
+    const [publishing, setPublishing] = useState(false);
 
     const [addForm, setAddForm] = useState({ amount: '', description: '' });
     const [adding, setAdding] = useState(false);
+
+    const [debitForm, setDebitForm] = useState({ amount: '', description: '', date: '' });
+    const [debiting, setDebiting] = useState(false);
 
     useEffect(() => {
         api.get('/group').then(r => setConfig({
             group_name: r.data.config.group_name,
             monthly_subscription: r.data.config.monthly_subscription,
             interest_rate: r.data.config.interest_rate,
+            announcement: r.data.config.announcement || '',
         }));
     }, []);
 
@@ -43,6 +48,26 @@ export default function SettingsPage() {
             setAddForm({ amount: '', description: '' });
         } catch (err) { toast.error(err.response?.data?.message || 'Error'); }
         finally { setAdding(false); }
+    };
+
+    const handleDebitFunds = async (e) => {
+        e.preventDefault();
+        setDebiting(true);
+        try {
+            await api.post('/group/debit-funds', { amount: Number(debitForm.amount), description: debitForm.description, date: debitForm.date || undefined });
+            toast.success('Funds debited successfully!');
+            setDebitForm({ amount: '', description: '', date: '' });
+        } catch (err) { toast.error(err.response?.data?.message || 'Error'); }
+        finally { setDebiting(false); }
+    };
+
+    const handlePublishAnnouncement = async (e) => {
+        e.preventDefault(); setPublishing(true);
+        try {
+            await api.put('/group/announcement', { announcement: config.announcement });
+            toast.success('Announcement published globally!');
+        } catch (err) { toast.error(err.response?.data?.message || 'Error publishing'); }
+        finally { setPublishing(false); }
     };
 
     return (
@@ -101,6 +126,38 @@ export default function SettingsPage() {
                     </div>
                 )}
 
+                {isAdmin && (
+                    <div className="card mt-2">
+                        <h3 style={{ fontWeight: 700, marginBottom: '.75rem', color: '#f43f5e' }}>Debit Funds from Group Pool</h3>
+                        <p className="text-muted text-sm mb-3">Withdraw capital from the group fund.</p>
+                        <form onSubmit={handleDebitFunds}>
+                            <div className="form-group">
+                                <label className="form-label">Amount (₹)</label>
+                                <input type="number" required min="1" step="1" className="form-control"
+                                    value={debitForm.amount}
+                                    onChange={e => setDebitForm({ ...debitForm, amount: e.target.value })} />
+                            </div>
+                            <div className="grid-2">
+                                <div className="form-group">
+                                    <label className="form-label">Date (Optional)</label>
+                                    <input type="date" className="form-control"
+                                        value={debitForm.date}
+                                        onChange={e => setDebitForm({ ...debitForm, date: e.target.value })} />
+                                </div>
+                                <div className="form-group">
+                                    <label className="form-label">Reason / Purpose</label>
+                                    <input required className="form-control" placeholder="e.g. Withdrawal, Expense..."
+                                        value={debitForm.description}
+                                        onChange={e => setDebitForm({ ...debitForm, description: e.target.value })} />
+                                </div>
+                            </div>
+                            <button type="submit" className="btn btn-primary" style={{ background: '#f43f5e', borderColor: '#f43f5e' }} disabled={debiting}>
+                                {debiting ? 'Debiting...' : 'Debit Funds'}
+                            </button>
+                        </form>
+                    </div>
+                )}
+
                 <div className="card mt-2">
                     <h3 style={{ fontWeight: 700, marginBottom: '.75rem' }}>Credit Score Rules</h3>
                     {[
@@ -116,6 +173,23 @@ export default function SettingsPage() {
                     ))}
                     <small className="text-muted text-sm mt-1" style={{ display: 'block' }}>Range: 300 (poor) – 900 (excellent). Starting score: 500</small>
                 </div>
+
+                {isAdmin && (
+                    <div className="card mt-2">
+                        <h3 style={{ fontWeight: 700, marginBottom: '.75rem', color: '#8b5cf6' }}>Global Announcement</h3>
+                        <p className="text-muted text-sm mb-3">Broadcast a message to all members. It will appear at the top of their dashboards. Clear the text to remove the announcement.</p>
+                        <form onSubmit={handlePublishAnnouncement}>
+                            <div className="form-group">
+                                <textarea className="form-control" rows="3" placeholder="Write announcement here..."
+                                    value={config.announcement}
+                                    onChange={e => setConfig({ ...config, announcement: e.target.value })} />
+                            </div>
+                            <button type="submit" className="btn btn-primary" style={{ background: '#8b5cf6', borderColor: '#8b5cf6' }} disabled={publishing}>
+                                {publishing ? 'Publishing...' : 'Publish Announcement'}
+                            </button>
+                        </form>
+                    </div>
+                )}
             </div>
         </div>
     );

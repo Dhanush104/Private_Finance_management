@@ -8,7 +8,7 @@ import {
 import {
     TrendingUp, Users, Banknote, PiggyBank, Star,
     FileText, Calendar, BarChart2, Globe, ArrowUpRight,
-    CheckCircle, XCircle, Clock, Zap
+    CheckCircle, XCircle, Clock, Zap, Bell
 } from 'lucide-react';
 
 const fmt = (n) => `₹${Number(n || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
@@ -467,6 +467,20 @@ export default function AdminDashboard() {
 
     return (
         <div>
+            {data.announcement && (
+                <div style={{
+                    background: 'linear-gradient(90deg, #8b5cf6, #a855f7)', padding: '1rem',
+                    borderRadius: 12, color: '#fff', marginBottom: '1.5rem',
+                    display: 'flex', alignItems: 'center', gap: '1rem',
+                    boxShadow: '0 4px 15px rgba(139, 92, 246, 0.25)'
+                }}>
+                    <Bell size={24} />
+                    <div style={{ flex: 1, fontWeight: 500, fontSize: '.95rem', lineHeight: 1.4 }}>
+                        {data.announcement}
+                    </div>
+                </div>
+            )}
+
             {/* Page Header */}
             <div className="page-header" style={{ marginBottom: '1.25rem' }}>
                 <div>
