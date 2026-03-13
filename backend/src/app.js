@@ -23,20 +23,17 @@ const dashboardRoutes = require('./routes/dashboardRoutes');
 const app = express();
 
 // Security
-app.use(helmet());
+// Disable helmet's strict CORP policy so it doesn't block cross-origin browser requests
+app.use(helmet({ crossOriginResourcePolicy: false }));
+
 app.use(cors({
+    // Allow ALL origins dynamically while preserving the ability to send credentials if required
     origin: function (origin, callback) {
-        // Allow requests with no origin (like mobile apps)
-        if (!origin) return callback(null, true);
-        // Allow any localhost port (for React/Flutter Web dev)
-        if (origin.startsWith('http://localhost')) return callback(null, true);
-        // Allow specific production domains
-        if (['https://royal-star-boys.netlify.app', process.env.CLIENT_URL].includes(origin)) {
-            return callback(null, true);
-        }
-        callback(null, false);
+        callback(null, true);
     },
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
 // Rate limiting — global (generous for normal app usage)
