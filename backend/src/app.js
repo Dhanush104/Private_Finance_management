@@ -25,11 +25,17 @@ const app = express();
 // Security
 app.use(helmet());
 app.use(cors({
-    origin: [
-        'http://localhost:5173',
-        'https://royal-star-boys.netlify.app',
-        process.env.CLIENT_URL
-    ].filter(Boolean),
+    origin: function (origin, callback) {
+        // Allow requests with no origin (like mobile apps)
+        if (!origin) return callback(null, true);
+        // Allow any localhost port (for React/Flutter Web dev)
+        if (origin.startsWith('http://localhost')) return callback(null, true);
+        // Allow specific production domains
+        if (['https://royal-star-boys.netlify.app', process.env.CLIENT_URL].includes(origin)) {
+            return callback(null, true);
+        }
+        callback(null, false);
+    },
     credentials: true,
 }));
 

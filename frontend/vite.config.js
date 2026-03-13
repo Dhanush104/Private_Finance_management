@@ -7,11 +7,11 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': {
-        target: 'https://private-finanace-management-api.onrender.com',
+        target: 'https://private-finance-management.onrender.com',
         changeOrigin: true,
       },
       '/socket.io': {
-        target: 'https://private-finanace-management-api.onrender.com',
+        target: 'https://private-finance-management.onrender.com',
         ws: true,
         changeOrigin: true,
       },

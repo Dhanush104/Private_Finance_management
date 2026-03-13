@@ -3,6 +3,6 @@
   "appName": "ROYAL",
   "webDir": "dist",
   "server": {
-    "url": "https://private-finanace-management-api.onrender.com"
+    "url": "https://private-finance-management.onrender.com"
   }
 }

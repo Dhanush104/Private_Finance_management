@@ -50,7 +50,6 @@ const recordRepayment = async (req, res, next) => {
 
         // Determine remaining principal and interest dynamically
         const totalPaidSoFar = loan.total_payable - loan.remaining_balance;
-        const totalPaidNowAndBefore = totalPaidSoFar + amount;
 
         // Use the newly evaluated interest parameter, tracking what we still owe!
         const paidInterestSoFar = Math.min(totalPaidSoFar, dynamic.dynamic_interest_amount);
@@ -106,7 +105,7 @@ const recordRepayment = async (req, res, next) => {
         broadcast('repayment_completed', {
             repayment,
             loan_id,
-            new_balance: Math.max(0, newBalance),
+            new_balance: Math.max(0, newRemainingBalance),
             loan_closed: isClosed,
             new_fund: newFund,
         });
