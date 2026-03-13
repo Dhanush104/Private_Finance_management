@@ -35,7 +35,7 @@ export default function MyContributionsPage() {
                 api.get('/dashboard/member'),
                 api.get('/group'),
             ]);
-            setContribs(c.data.contributions.filter(contribution => contribution.user_id === user?.id));
+            setContribs(c.data.contributions.filter(contribution => Number(contribution.user_id) === Number(user?.id)));
             setStats(d.data.dashboard.contribution_stats || {});
             setConfig(g.data.config);
             if (g.data.config) setForm(f => ({ ...f, amount: g.data.config.monthly_subscription }));

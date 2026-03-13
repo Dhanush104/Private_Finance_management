@@ -727,3 +727,51 @@
 2026-02-25 16:26:51 [info]: 🔌 Socket disconnected: DOzGtWybPAitd9pLAAAM
 2026-02-26 13:50:03 [warn]: 400 - Validation error: email: Required; password: Required - /api/auth/login
 2026-02-26 13:51:01 [warn]: 400 - Validation error: email: Required; password: Required - /api/auth/login/
+2026-02-28 21:44:02 [warn]: 401 - Authentication required - /api/dashboard/admin
+2026-02-28 21:44:05 [warn]: 401 - Authentication required - /api/dashboard/member
+2026-02-28 21:44:49 [warn]: 401 - Invalid email or password - /api/auth/login
+2026-02-28 21:44:49 [warn]: 401 - Authentication required - /api/dashboard/admin
+2026-02-28 21:44:49 [warn]: 401 - Authentication required - /api/loans
+2026-02-28 21:44:49 [warn]: 401 - Authentication required - /api/contributions
+2026-02-28 21:46:54 [warn]: 401 - Invalid email or password - /api/auth/login
+2026-02-28 21:46:54 [warn]: 401 - Authentication required - /api/dashboard/admin
+2026-02-28 21:47:20 [warn]: 401 - Invalid email or password - /api/auth/login
+2026-02-28 21:47:54 [warn]: 401 - Invalid email or password - /api/auth/login
+2026-02-28 21:47:54 [warn]: 401 - Authentication required - /api/dashboard/admin
+2026-02-28 21:47:54 [warn]: 401 - Authentication required - /api/dashboard/member
+2026-02-28 21:47:54 [warn]: 401 - Authentication required - /api/loans
+2026-02-28 21:47:54 [warn]: 401 - Authentication required - /api/contributions
+2026-02-28 21:50:13 [warn]: 401 - Invalid email or password - /api/auth/login
+2026-02-28 21:50:13 [warn]: 401 - Authentication required - /api/dashboard/admin
+2026-02-28 21:53:26 [warn]: 401 - Invalid email or password - /api/auth/login
+2026-02-28 21:53:26 [warn]: 401 - Authentication required - /api/dashboard/admin
+2026-02-28 21:54:45 [warn]: 401 - Invalid email or password - /api/auth/login
+2026-02-28 21:54:45 [warn]: 401 - Authentication required - /api/loans
+2026-02-28 21:54:50 [warn]: 401 - Invalid email or password - /api/auth/login
+2026-02-28 21:54:50 [warn]: 401 - Authentication required - /api/contributions
+2026-02-28 21:58:56 [error]: TypeError: (loan.principal + dynamic_interest_amount).toFixed is not a function
+    at calculateDynamicLoanDetails (D:\Projects\ROYAL\backend\src\services\loanService.js:50:89)
+    at D:\Projects\ROYAL\backend\src\controllers\loanController.js:18:16
+    at Array.map (<anonymous>)
+    at getLoans (D:\Projects\ROYAL\backend\src\controllers\loanController.js:16:39)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+2026-02-28 22:00:44 [error]: Error: Unknown column 'announcement' in 'field list'
+    at PromisePool.query (D:\Projects\ROYAL\backend\node_modules\mysql2\lib\promise\pool.js:36:22)
+    at updateAnnouncement (D:\Projects\ROYAL\backend\src\controllers\groupController.js:90:20)
+    at Layer.handle [as handle_request] (D:\Projects\ROYAL\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (D:\Projects\ROYAL\backend\node_modules\express\lib\router\route.js:149:13)
+    at D:\Projects\ROYAL\backend\src\middleware\validate.js:18:5
+    at Layer.handle [as handle_request] (D:\Projects\ROYAL\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (D:\Projects\ROYAL\backend\node_modules\express\lib\router\route.js:149:13)
+    at D:\Projects\ROYAL\backend\src\middleware\authorize.js:8:9
+    at Layer.handle [as handle_request] (D:\Projects\ROYAL\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (D:\Projects\ROYAL\backend\node_modules\express\lib\router\route.js:149:13)
+2026-02-28 22:02:11 [error]: ❌ MySQL connection failed:
+2026-02-28 22:03:48 [error]: TypeError: (loan.principal + dynamic_interest_amount).toFixed is not a function
+    at calculateDynamicLoanDetails (D:\Projects\ROYAL\backend\src\services\loanService.js:50:89)
+    at D:\Projects\ROYAL\backend\src\controllers\loanController.js:18:16
+    at Array.map (<anonymous>)
+    at getLoans (D:\Projects\ROYAL\backend\src\controllers\loanController.js:16:39)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+2026-02-28 22:07:54 [warn]: Seed skipped or failed:
+2026-02-28 22:08:02 [error]: ❌ MySQL connection failed:

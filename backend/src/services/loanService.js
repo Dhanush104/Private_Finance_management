@@ -46,12 +46,15 @@ const calculateDynamicLoanDetails = (loan) => {
     // User requested "how many months are completed... to current date". Let's allow it to exceed duration if they are late.
     const monthsElapsed = Math.max(1, Math.ceil(diff / msIn30Days));
 
-    const dynamic_interest_amount = parseFloat(((loan.principal * loan.interest_rate * monthsElapsed) / 100).toFixed(2));
-    const dynamic_total_payable = parseFloat((loan.principal + dynamic_interest_amount).toFixed(2));
+    const principal = parseFloat(loan.principal);
+    const interestRate = parseFloat(loan.interest_rate);
+
+    const dynamic_interest_amount = parseFloat(((principal * interestRate * monthsElapsed) / 100).toFixed(2));
+    const dynamic_total_payable = parseFloat((principal + dynamic_interest_amount).toFixed(2));
 
     // We need to know how much they ALREADY paid to find dynamic remaining balance.
     // Total original payable - remaining = amount paid so far.
-    const amountPaidSoFar = loan.total_payable - loan.remaining_balance;
+    const amountPaidSoFar = parseFloat(loan.total_payable) - parseFloat(loan.remaining_balance);
     const dynamic_remaining_balance = Math.max(0, parseFloat((dynamic_total_payable - amountPaidSoFar).toFixed(2)));
 
     return {

@@ -28,14 +28,17 @@ export default function LoansPage() {
 
     const fetchLoans = async () => {
         try {
-            const [l, u, g] = await Promise.all([
+            const [lRes, gRes] = await Promise.all([
                 api.get('/loans'),
-                api.get('/users'),
                 api.get('/group')
             ]);
-            setLoans(l.data.loans);
-            setMembers(u.data.users.filter(usr => usr.role !== 'admin' || usr.id === user.id)); // Can request for self or members
-            setConfig(g.data.config);
+            setLoans(lRes.data.loans);
+            setConfig(gRes.data.config);
+
+            if (isAdmin) {
+                const mRes = await api.get('/members');
+                setMembers(mRes.data.users.filter(usr => usr.role !== 'admin' || usr.id === user.id));
+            }
         }
         finally { setLoading(false); }
     };

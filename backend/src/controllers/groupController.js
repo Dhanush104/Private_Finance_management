@@ -68,7 +68,7 @@ const debitFunds = async (req, res, next) => {
         if (date) {
             // update the latest ledger entry created by this user with this description
             await conn.query(
-                `UPDATE group_fund_ledger SET created_at = ? WHERE user_id = ? AND transaction_type = 'adjustment' AND description = ? ORDER BY id DESC LIMIT 1`,
+                `UPDATE transactions SET created_at = ? WHERE user_id = ? AND type = 'adjustment' AND description = ? ORDER BY id DESC LIMIT 1`,
                 [`${date} 00:00:00`, req.user.id, `Debit: ${description}`]
             );
         }
