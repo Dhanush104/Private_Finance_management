@@ -17,7 +17,12 @@ api.interceptors.response.use(
         if (err.response?.status === 401) {
             localStorage.removeItem('rsb_token');
             localStorage.removeItem('rsb_user');
-            window.location.href = '/login';
+
+            // Navigate to login only if not already there,
+            // to avoid wiping out login form error messages.
+            if (window.location.pathname !== '/login') {
+                window.location.href = '/login';
+            }
         }
         return Promise.reject(err);
     }

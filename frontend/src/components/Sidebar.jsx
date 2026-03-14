@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { useThemeStore } from '../store/themeStore';
 import {
     LayoutDashboard, Users, CreditCard, Banknote, RefreshCw,
-    BookOpen, Settings, LogOut, Star, ChevronRight, Moon, Sun
+    BookOpen, Settings, LogOut, Star, ChevronRight, Moon, Sun, X
 } from 'lucide-react';
 import './Sidebar.css';
 
@@ -26,7 +26,7 @@ const memberLinks = [
     { to: '/my-profile', icon: Users, label: 'My Profile' },
 ];
 
-export default function Sidebar() {
+export default function Sidebar({ isOpen, onClose }) {
     const { user, logout, isAdmin } = useAuth();
     const { dark, toggle } = useThemeStore();
     const navigate = useNavigate();
@@ -35,13 +35,17 @@ export default function Sidebar() {
     const handleLogout = () => { logout(); navigate('/login'); };
 
     return (
-        <aside className="sidebar">
+        <aside className={`sidebar ${isOpen ? 'open' : ''}`}>
             <div className="sidebar-brand">
                 <div className="brand-icon"><Star size={20} fill="currentColor" /></div>
                 <div>
                     <div className="brand-name">Royal Star Boys</div>
                     <div className="brand-sub">Fund Management</div>
                 </div>
+                {/* Mobile Close Button */}
+                <button className="mobile-close-btn" onClick={onClose}>
+                    <X size={20} />
+                </button>
             </div>
 
             <nav className="sidebar-nav">

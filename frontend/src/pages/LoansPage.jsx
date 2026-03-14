@@ -21,7 +21,7 @@ export default function LoansPage() {
     const [modal, setModal] = useState(false);
     const [members, setMembers] = useState([]);
     const [config, setConfig] = useState(null);
-    const [form, setForm] = useState({ principal: '', duration_months: '1', purpose: '', user_id: '' });
+    const [form, setForm] = useState({ principal: '', purpose: '', user_id: '' });
     const [saving, setSaving] = useState(false);
     const [preview, setPreview] = useState(null);
     const socketRef = useSocket();
@@ -77,13 +77,12 @@ export default function LoansPage() {
         : 0;
 
     const calcPreview = () => {
-        if (!config || !form.principal || !form.duration_months) { setPreview(null); return; }
-        const P = Number(form.principal), R = config.interest_rate, T = Number(form.duration_months);
-        const SI = (P * R * T) / 100;
+        if (!config || !form.principal) { setPreview(null); return; }
+        const P = Number(form.principal), R = config.interest_rate;
         const perMonth = (P * R) / 100;
-        setPreview({ interest: SI, total: P + SI, perMonth: perMonth });
+        setPreview({ perMonth: perMonth });
     };
-    useEffect(() => { calcPreview(); }, [form.principal, form.duration_months, config]);
+    useEffect(() => { calcPreview(); }, [form.principal, config]);
 
     const handleSubmit = async (e) => {
         e.preventDefault(); setSaving(true);
@@ -93,9 +92,9 @@ export default function LoansPage() {
             return;
         }
         try {
-            await api.post('/loans', { principal: Number(form.principal), duration_months: Number(form.duration_months), purpose: form.purpose, user_id: Number(form.user_id) });
-            toast.success('Loan recorded! Awaiting your approval.');
-            setModal(false); setForm({ principal: '', duration_months: '1', purpose: '', user_id: '' }); fetchLoans();
+            const r = await api.post('/loans', { principal: Number(form.principal), purpose: form.purpose, user_id: Number(form.user_id) });
+            toast.success(r.data.message || 'Loan recorded successfully');
+            setModal(false); setForm({ principal: '', purpose: '', user_id: '' }); fetchLoans();
         } catch (err) { toast.error(err.response?.data?.message || 'Error'); }
         finally { setSaving(false); }
     };
@@ -166,7 +165,7 @@ export default function LoansPage() {
                     <div style={{ display: 'flex', gap: '.35rem', background: 'var(--bg3)', borderRadius: 10, padding: '.3rem', border: '1px solid var(--border)' }}>
                         {filterTabs.map(f => (
                             <button key={f} onClick={() => setFilter(f)} style={{
-                                padding: '.3rem .75rem', borderRadius: 7, border: 'none',
+                                padding: '.3rem .75rem', borderRadius: 7,
                                 cursor: 'pointer', fontSize: '.78rem', fontWeight: filter === f ? 700 : 500,
                                 background: filter === f ? 'var(--bg2)' : 'transparent',
                                 color: filter === f ? filterColors[f] : 'var(--text2)',
@@ -231,8 +230,8 @@ export default function LoansPage() {
                                                     </div>
                                                 ) : <span className="text-muted text-sm">—</span>}
                                             </td>
-                                            <td className="text-sm">{l.duration_months} mo.</td>
-                                            <td className="text-muted text-sm">{l.due_date ? new Date(l.due_date).toLocaleDateString('en-IN') : '—'}</td>
+                                            <td className="text-sm">—</td>
+                                            <td className="text-muted text-sm">—</td>
                                             <td><StatusBadge status={l.status} /></td>
                                             {isAdmin && (
                                                 <td>
@@ -288,15 +287,9 @@ export default function LoansPage() {
                                     ))}
                                 </select>
                             </div>
-                            <div className="grid-2">
-                                <div className="form-group">
-                                    <label className="form-label">Principal Amount (₹) *</label>
-                                    <input type="number" required min="1" className="form-control" value={form.principal} onChange={e => setForm({ ...form, principal: e.target.value })} />
-                                </div>
-                                <div className="form-group">
-                                    <label className="form-label">Duration (months) *</label>
-                                    <input type="number" required min="1" max="60" className="form-control" value={form.duration_months} onChange={e => setForm({ ...form, duration_months: e.target.value })} />
-                                </div>
+                            <div className="form-group">
+                                <label className="form-label">Principal Amount (₹) *</label>
+                                <input type="number" required min="1" className="form-control" value={form.principal} onChange={e => setForm({ ...form, principal: e.target.value })} />
                             </div>
                             <div className="form-group">
                                 <label className="form-label">Purpose</label>
@@ -304,11 +297,9 @@ export default function LoansPage() {
                             </div>
                             {preview && (
                                 <div style={{ background: 'var(--bg3)', borderRadius: 8, padding: '.75rem 1rem', marginBottom: '1rem', fontSize: '.875rem' }}>
-                                    <div className="fw-600 mb-1">Loan Preview <span className="text-muted" style={{ fontWeight: 400 }}>(SI = P × R × T / 100)</span></div>
+                                    <div className="fw-600 mb-1">Loan Interest Preview</div>
                                     <div className="flex gap-3"><span className="text-muted">Interest Rate:</span><strong>{config?.interest_rate}% per month</strong></div>
                                     <div className="flex gap-3"><span className="text-muted">Per Month Interest:</span><strong style={{ color: '#8b5cf6' }}>{fmt(preview.perMonth)}</strong></div>
-                                    <div className="flex gap-3"><span className="text-muted">Total Interest Amount:</span><strong style={{ color: '#f59e0b' }}>{fmt(preview.interest)}</strong></div>
-                                    <div className="flex gap-3"><span className="text-muted">Total Payable:</span><strong style={{ color: '#ef4444' }}>{fmt(preview.total)}</strong></div>
                                 </div>
                             )}
                             <div className="flex gap-2">

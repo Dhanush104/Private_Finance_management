@@ -37,33 +37,70 @@ const getLoan = async (req, res, next) => {
 
 // POST /api/loans (member requests a loan, or admin on behalf)
 const requestLoan = async (req, res, next) => {
+    const conn = await pool.getConnection();
     try {
-        const { principal, duration_months, purpose, user_id } = req.validated.body;
+        await conn.beginTransaction();
+
+        const { principal, purpose, user_id } = req.validated.body;
+        const duration_months = 0; // Duration is no longer requested upfront
 
         let targetUserId = req.user.id;
+        const isAdmin = req.user.role === 'admin';
         if (user_id) {
-            if (req.user.role !== 'admin') throw new AppError('Only admins can request loans for others', 403);
+            if (!isAdmin) throw new AppError('Only admins can request loans for others', 403);
             targetUserId = user_id;
         }
 
         // Fetch current interest rate
-        const [[config]] = await pool.query('SELECT interest_rate FROM group_config WHERE id = 1');
+        const [[config]] = await conn.query('SELECT interest_rate FROM group_config WHERE id = 1');
 
         const details = calculateLoanDetails(principal, config.interest_rate, duration_months);
 
-        const [result] = await pool.query(
-            `INSERT INTO loans (user_id, principal, interest_rate, duration_months, interest_amount, total_payable, remaining_balance, purpose, status)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending')`,
+        const status = isAdmin ? 'active' : 'pending';
+        const approvedBy = isAdmin ? req.user.id : null;
+
+        let dueDate = null;
+        if (isAdmin) {
+            const due = new Date();
+            due.setMonth(due.getMonth() + 1);
+            dueDate = due.toISOString().split('T')[0];
+        }
+
+        const [result] = await conn.query(
+            `INSERT INTO loans (user_id, principal, interest_rate, duration_months, interest_amount, total_payable, remaining_balance, purpose, status, approved_by, approved_at, due_date)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ${isAdmin ? 'NOW()' : 'NULL'}, ?)`,
             [targetUserId, principal, config.interest_rate, duration_months,
-                details.interest_amount, details.total_payable, details.remaining_balance, purpose || null]
+                details.interest_amount, details.total_payable, details.remaining_balance, purpose || null, status, approvedBy, dueDate]
         );
 
-        res.status(201).json({
-            success: true,
-            message: 'Loan request submitted',
-            loan: { id: result.insertId, ...details, status: 'pending' },
-        });
-    } catch (err) { next(err); }
+        let newFund = undefined;
+        if (isAdmin) {
+            newFund = await updateGroupFund(
+                conn, -principal, 'loan_disbursement',
+                `Loan disbursed to user #${targetUserId}: ${purpose || 'no purpose'}`,
+                targetUserId, result.insertId
+            );
+        }
+
+        await conn.commit();
+
+        const [[loan]] = await conn.query(
+            `SELECT l.*, u.name as member_name FROM loans l JOIN users u ON l.user_id = u.id WHERE l.id = ?`,
+            [result.insertId]
+        );
+
+        if (isAdmin) {
+            broadcast('loan_approved', { loan, new_fund: newFund });
+            res.status(201).json({ success: true, message: 'Loan auto-approved and disbursed', loan });
+        } else {
+            res.status(201).json({ success: true, message: 'Loan request submitted', loan });
+        }
+    } catch (err) {
+        await conn.rollback();
+        next(err);
+    } finally {
+        conn.release();
+    }
 };
 
 // POST /api/loans/:id/approve  (admin only)
@@ -76,9 +113,9 @@ const approveLoan = async (req, res, next) => {
         if (!loan) throw new AppError('Loan not found', 404);
         if (loan.status !== 'pending') throw new AppError(`Loan is already ${loan.status}`, 400);
 
-        // Calculate due date
+        // Calculate due date (Since duration_months is 0 initially, due date might not be fully accurate here. We'll set it arbitrarily to 1 year or leave it null, but for now 1 month default)
         const due = new Date();
-        due.setMonth(due.getMonth() + loan.duration_months);
+        due.setMonth(due.getMonth() + 1);
 
         await conn.query(
             `UPDATE loans SET status = 'active', approved_by = ?, approved_at = NOW(), due_date = ? WHERE id = ?`,

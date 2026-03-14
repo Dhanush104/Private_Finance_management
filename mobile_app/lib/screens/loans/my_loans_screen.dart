@@ -188,62 +188,101 @@ class _MyLoansScreenState extends State<MyLoansScreen> {
     if (_loading) return const Center(child: CircularProgressIndicator());
 
     return Scaffold(
+      backgroundColor: const Color(0xFFF8FAFC),
+      appBar: AppBar(
+        title: const Text('My Loans', style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: -0.5)),
+        backgroundColor: Colors.transparent,
+        scrolledUnderElevation: 0,
+      ),
       body: RefreshIndicator(
         onRefresh: _fetchAll,
+        edgeOffset: 20,
         child: _loans.isEmpty
-            ? const Center(child: Text('No loan requests yet'))
+            ? Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.payments_rounded, size: 64, color: Colors.blueGrey.shade200),
+                    const SizedBox(height: 16),
+                    Text('No loan records found', style: TextStyle(color: Colors.blueGrey.shade400, fontSize: 16, fontWeight: FontWeight.w500)),
+                  ],
+                ),
+              )
             : ListView.builder(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                physics: const BouncingScrollPhysics(),
                 itemCount: _loans.length,
                 itemBuilder: (context, index) {
                   final l = _loans[index];
-                  return Card(
-                    margin: const EdgeInsets.only(bottom: 8),
+                  final pct = l.totalPayable > 0 ? ((l.totalPayable - l.remainingBalance) / l.totalPayable * 100).round() : 0;
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(color: Colors.blueGrey.shade50),
+                      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4))],
+                    ),
                     child: Padding(
-                      padding: const EdgeInsets.all(12),
+                      padding: const EdgeInsets.all(20),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text(_fmt(l.principal), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                              Text(_fmt(l.principal).split('.')[0], style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Color(0xFF0F172A), letterSpacing: -1)),
                               _statusBadge(l.status),
                             ],
                           ),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 16),
                           Row(
                             children: [
-                              _infoChip('Interest', _fmt(l.interestAmount), Colors.orange),
-                              const SizedBox(width: 6),
-                              _infoChip('Total', _fmt(l.totalPayable), Colors.blue),
-                              const SizedBox(width: 6),
-                              _infoChip('${l.durationMonths} mo.', '', Colors.purple, iconOnly: true),
+                              _infoChip('Interest', _fmt(l.interestAmount).split('.')[0], const Color(0xFFF59E0B)),
+                              const SizedBox(width: 8),
+                              _infoChip('Total', _fmt(l.totalPayable).split('.')[0], const Color(0xFF2563EB)),
+                              const SizedBox(width: 8),
+                              _infoChip('${l.durationMonths} mo', '', const Color(0xFF7C3AED), iconOnly: true),
                             ],
                           ),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 20),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text(
-                                'Remaining: ${_fmt(l.remainingBalance)}',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: l.remainingBalance > 0 ? Colors.red : Colors.green,
-                                ),
-                              ),
-                              Text(
-                                l.dueDate != null
-                                    ? 'Due: ${DateTime.tryParse(l.dueDate!)?.toLocal().toString().substring(0, 10) ?? l.dueDate}'
-                                    : '',
-                                style: const TextStyle(fontSize: 12, color: Colors.grey),
-                              ),
+                              _labelValue('Remaining Balance', _fmt(l.remainingBalance), color: l.remainingBalance > 0 ? const Color(0xFFEF4444) : const Color(0xFF10B981)),
+                              if (l.dueDate != null)
+                                _labelValue('Next Due', DateTime.tryParse(l.dueDate!)?.toLocal().toString().substring(0, 10) ?? l.dueDate!),
                             ],
                           ),
+                          if (l.status == 'active' || l.status == 'closed') ...[
+                            const SizedBox(height: 20),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text('Repayment Progress', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.blueGrey.shade400)),
+                                    Text('$pct%', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: pct == 100 ? const Color(0xFF10B981) : const Color(0xFF2563EB))),
+                                  ],
+                                ),
+                                const SizedBox(height: 6),
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(4),
+                                  child: LinearProgressIndicator(
+                                    value: pct / 100,
+                                    minHeight: 6,
+                                    color: pct == 100 ? const Color(0xFF10B981) : const Color(0xFF2563EB),
+                                    backgroundColor: Colors.blueGrey.shade100.withOpacity(0.3),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
                           if (l.purpose != null && l.purpose!.isNotEmpty)
                             Padding(
-                              padding: const EdgeInsets.only(top: 6),
-                              child: Text('Purpose: ${l.purpose}', style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                              padding: const EdgeInsets.only(top: 16),
+                              child: Text('Purpose: ${l.purpose}', style: TextStyle(fontSize: 12, color: Colors.blueGrey.shade500, fontWeight: FontWeight.w500)),
                             ),
                         ],
                       ),
@@ -254,19 +293,33 @@ class _MyLoansScreenState extends State<MyLoansScreen> {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _showRequestLoanDialog,
-        icon: const Icon(Icons.add),
-        label: const Text('Request Loan'),
+        backgroundColor: const Color(0xFF2563EB),
+        foregroundColor: Colors.white,
+        icon: const Icon(Icons.add_rounded),
+        label: const Text('Request Loan', style: TextStyle(fontWeight: FontWeight.bold)),
+        elevation: 4,
       ),
+    );
+  }
+
+  Widget _labelValue(String label, String value, {Color? color}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.blueGrey.shade400, letterSpacing: 0.5)),
+        const SizedBox(height: 2),
+        Text(value, style: TextStyle(fontSize: 15, fontWeight: FontWeight.w900, color: color ?? const Color(0xFF0F172A), letterSpacing: -0.5)),
+      ],
     );
   }
 
   Widget _infoChip(String label, String value, Color color, {bool iconOnly = false}) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(color: color.withOpacity(0.08), borderRadius: BorderRadius.circular(10), border: Border.all(color: color.withOpacity(0.1))),
       child: Text(
-        iconOnly ? label : '$label: $value',
-        style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: color),
+        iconOnly ? label : '$label: ₹$value',
+        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: color),
       ),
     );
   }

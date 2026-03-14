@@ -83,7 +83,6 @@ const requestLoanSchema = z.object({
     body: z.object({
         user_id: z.number().int().positive().optional(),
         principal: z.number().positive(),
-        duration_months: z.number().int().min(1).max(60),
         purpose: z.string().max(255).optional(),
     }),
 });
@@ -92,6 +91,7 @@ const repaymentSchema = z.object({
     body: z.object({
         loan_id: z.number().int().positive(),
         amount: z.number().positive(),
+        months: z.number().int().min(0).max(120),
         notes: z.string().max(255).optional(),
     }),
 });

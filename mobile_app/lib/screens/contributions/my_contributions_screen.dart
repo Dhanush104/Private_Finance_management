@@ -54,7 +54,7 @@ class _MyContributionsScreenState extends State<MyContributionsScreen> {
     }
   }
 
-  String _fmt(num n) => '₹${n.toStringAsFixed(2)}';
+
 
   void _showRecordContributionDialog() {
     final now = DateTime.now();
@@ -154,95 +154,179 @@ class _MyContributionsScreenState extends State<MyContributionsScreen> {
     );
   }
 
+  String _fmt(dynamic n) {
+    if (n == null) return '₹0.00';
+    if (n is String) return '₹${double.tryParse(n)?.toStringAsFixed(2) ?? '0.00'}';
+    return '₹${(n as num).toStringAsFixed(2)}';
+  }
+
+  int _parseInt(dynamic v) {
+    if (v == null) return 0;
+    if (v is int) return v;
+    if (v is String) return int.tryParse(v) ?? 0;
+    return 0;
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_loading) return const Center(child: CircularProgressIndicator());
 
-    final paid = _stats['paid_months'] ?? 0;
-    final total = _stats['total_months'] ?? 0;
+    final paid = _parseInt(_stats['paid_months']);
+    final total = _parseInt(_stats['total_months']);
     final missed = total - paid;
     final payRate = total > 0 ? (paid / total * 100).round() : 0;
 
-    return Scaffold(
-      body: RefreshIndicator(
-        onRefresh: _fetchData,
-        child: ListView(
-          padding: const EdgeInsets.all(12),
-          children: [
-            // Stats cards
-            Row(
-              children: [
-                Expanded(child: _statCard('Total Paid', _fmt((_stats['total_paid'] ?? 0).toDouble()), Colors.green, Icons.trending_up)),
-                const SizedBox(width: 8),
-                Expanded(child: _statCard('Months Paid', '$paid / $total', Colors.blue, Icons.check_circle, progress: payRate / 100)),
-                const SizedBox(width: 8),
-                Expanded(child: _statCard('Missed', '$missed', missed > 0 ? Colors.red : Colors.green, missed > 0 ? Icons.cancel : Icons.check_circle)),
-              ],
-            ),
-            const SizedBox(height: 16),
-            const Text('Contribution History', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            if (_contributions.isEmpty)
-              const Card(child: Padding(padding: EdgeInsets.all(32), child: Center(child: Text('No contributions recorded yet'))))
-            else
-              ..._contributions.map((c) => Card(
-                margin: const EdgeInsets.only(bottom: 6),
-                child: ListTile(
-                  leading: Icon(
-                    c.status == 'paid' ? Icons.check_circle : c.status == 'missed' ? Icons.cancel : Icons.schedule,
-                    color: c.status == 'paid' ? Colors.green : c.status == 'missed' ? Colors.red : Colors.orange,
-                  ),
-                  title: Row(
-                    children: [
-                      Text(c.monthYear, style: const TextStyle(fontWeight: FontWeight.w600)),
-                      const SizedBox(width: 8),
-                      _buildStatusBadge(c.status),
-                    ],
-                  ),
-                  subtitle: Text(
-                    c.paidAt != null
-                        ? 'Paid: ${DateTime.tryParse(c.paidAt!)?.toLocal().toString().substring(0, 10) ?? c.paidAt}'
-                        : (c.notes ?? ''),
-                    style: const TextStyle(fontSize: 12, color: Colors.grey),
-                  ),
-                  trailing: Text(
-                    c.amount > 0 ? _fmt(c.amount) : '—',
-                    style: TextStyle(fontWeight: FontWeight.bold, color: c.status == 'paid' ? Colors.green : Colors.grey),
-                  ),
-                ),
-              )),
-          ],
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        image: DecorationImage(
+          image: const NetworkImage('https://www.transparenttextures.com/patterns/cubes.png'),
+          opacity: 0.03,
+          repeat: ImageRepeat.repeat,
         ),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _showRecordContributionDialog,
-        icon: const Icon(Icons.add),
-        label: const Text('Record'),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          title: const Text('My Contributions', style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: -0.5)),
+          backgroundColor: Colors.transparent,
+          scrolledUnderElevation: 0,
+        ),
+        body: RefreshIndicator(
+          onRefresh: _fetchData,
+          edgeOffset: 20,
+          child: ListView(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            physics: const BouncingScrollPhysics(),
+            children: [
+              // Stats Row
+              Row(
+                children: [
+                  Expanded(child: _statCard('Total Paid', _fmt(_stats['total_paid']), const Color(0xFF10B981), Icons.account_balance_rounded)),
+                  const SizedBox(width: 16),
+                  Expanded(child: _statCard('Completion', '$payRate%', const Color(0xFF2563EB), Icons.verified_user_rounded, progress: payRate / 100)),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(child: _statCard('Paid Months', '$paid', const Color(0xFF6366F1), Icons.event_available_rounded)),
+                  const SizedBox(width: 16),
+                  Expanded(child: _statCard('Pending', '$missed', missed > 0 ? const Color(0xFFF59E0B) : const Color(0xFF10B981), Icons.event_busy_rounded)),
+                ],
+              ),
+              
+              const SizedBox(height: 48),
+              const Text('Payment Journal', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Color(0xFF1E293B), letterSpacing: -0.5)),
+              const SizedBox(height: 20),
+              
+              if (_contributions.isEmpty)
+                Container(
+                  padding: const EdgeInsets.all(40),
+                  decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(24), border: Border.all(color: Colors.blueGrey.shade100.withOpacity(0.5))),
+                  child: Center(child: Text('No contributions found', style: TextStyle(color: Colors.blueGrey.shade400, fontWeight: FontWeight.w600))),
+                )
+              else
+                ..._contributions.map((c) => Container(
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(color: Colors.blueGrey.shade50),
+                    boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 15, offset: const Offset(0, 8))],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(24),
+                    child: ListTile(
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                      leading: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: (c.status == 'paid' ? Colors.green : (c.status == 'missed' ? Colors.red : Colors.orange)).withOpacity(0.12),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          c.status == 'paid' ? Icons.check_circle_rounded : c.status == 'missed' ? Icons.error_rounded : Icons.schedule_rounded,
+                          color: c.status == 'paid' ? Colors.green : c.status == 'missed' ? Colors.red : Colors.orange,
+                          size: 20,
+                        ),
+                      ),
+                      title: Text(c.monthYear, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 17, color: Color(0xFF1E293B))),
+                      subtitle: Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Text(
+                          c.paidAt != null
+                              ? 'Conf: ${DateTime.tryParse(c.paidAt!)?.toLocal().toString().substring(0, 10) ?? c.paidAt}'
+                              : (c.notes ?? 'Transaction in progress'),
+                          style: TextStyle(fontSize: 12, color: Colors.blueGrey.shade500, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                      trailing: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            c.amount > 0 ? '₹${c.amount.toStringAsFixed(0)}' : '—',
+                            style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: c.status == 'paid' ? const Color(0xFF1E293B) : Colors.blueGrey.shade300, letterSpacing: -0.5),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(c.status.toUpperCase(), style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: (c.status == 'paid' ? Colors.green : (c.status == 'missed' ? Colors.red : Colors.orange)))),
+                        ],
+                      ),
+                    ),
+                  ),
+                )),
+              const SizedBox(height: 100), // Space for FAB
+            ],
+          ),
+        ),
+        floatingActionButton: FloatingActionButton.extended(
+          onPressed: _showRecordContributionDialog,
+          backgroundColor: const Color(0xFF2563EB),
+          foregroundColor: Colors.white,
+          icon: const Icon(Icons.add_rounded),
+          label: const Text('Record Payment', style: TextStyle(fontWeight: FontWeight.bold)),
+          elevation: 6,
+        ),
       ),
     );
   }
 
   Widget _statCard(String title, String value, Color color, IconData icon, {double? progress}) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(icon, color: color, size: 20),
-            const SizedBox(height: 6),
-            Text(title, style: const TextStyle(fontSize: 11, color: Colors.grey)),
-            const SizedBox(height: 2),
-            Text(value, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: color)),
-            if (progress != null) ...[
-              const SizedBox(height: 4),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(4),
-                child: LinearProgressIndicator(value: progress, minHeight: 4, color: color, backgroundColor: color.withOpacity(0.15)),
-              ),
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.blueGrey.shade50),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4))],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Icon(icon, color: color, size: 20),
+              if (progress != null)
+                Text(value, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: color))
+              else
+                const SizedBox.shrink(),
             ],
+          ),
+          const SizedBox(height: 12),
+          Text(title, style: TextStyle(fontSize: 12, color: Colors.blueGrey.shade500, fontWeight: FontWeight.w600)),
+          const SizedBox(height: 2),
+          if (progress == null)
+            Text(value, style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Color(0xFF1E293B), letterSpacing: -0.5)),
+          if (progress != null) ...[
+            const SizedBox(height: 8),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: LinearProgressIndicator(value: progress, minHeight: 6, color: color, backgroundColor: color.withOpacity(0.1)),
+            ),
           ],
-        ),
+        ],
       ),
     );
   }

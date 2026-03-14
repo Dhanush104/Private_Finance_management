@@ -225,14 +225,27 @@ class _LoansScreenState extends State<LoansScreen> {
 
   Widget _buildStatusBadge(String status) {
     Color bg = Colors.grey;
-    if (status == 'active') bg = Colors.green;
-    if (status == 'pending') bg = Colors.orange;
-    if (status == 'rejected' || status == 'defaulted') bg = Colors.red;
-    if (status == 'closed') bg = Colors.blue;
+    IconData icon = Icons.help_outline_rounded;
+    if (status == 'active') { bg = const Color(0xFF10B981); icon = Icons.verified_rounded; }
+    if (status == 'pending') { bg = const Color(0xFFF59E0B); icon = Icons.schedule_rounded; }
+    if (status == 'rejected' || status == 'defaulted') { bg = const Color(0xFFEF4444); icon = Icons.error_rounded; }
+    if (status == 'closed') { bg = const Color(0xFF2563EB); icon = Icons.task_alt_rounded; }
+    
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(color: bg.withOpacity(0.15), borderRadius: BorderRadius.circular(10)),
-      child: Text(status.toUpperCase(), style: TextStyle(color: bg, fontWeight: FontWeight.bold, fontSize: 11)),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: bg.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: bg.withOpacity(0.2), width: 1),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: bg),
+          const SizedBox(width: 4),
+          Text(status.toUpperCase(), style: TextStyle(color: bg, fontWeight: FontWeight.w800, fontSize: 10, letterSpacing: 0.5)),
+        ],
+      ),
     );
   }
 
@@ -245,151 +258,231 @@ class _LoansScreenState extends State<LoansScreen> {
     final totalActive = _loans.where((l) => l.status == 'active').fold<double>(0, (s, l) => s + l.remainingBalance);
 
     return Scaffold(
+      backgroundColor: const Color(0xFFF8FAFC),
+      appBar: AppBar(
+        title: const Text('Loans Management', style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: -0.5)),
+        backgroundColor: Colors.transparent,
+        scrolledUnderElevation: 0,
+      ),
       body: RefreshIndicator(
         onRefresh: _fetchLoans,
+        edgeOffset: 20,
         child: ListView(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          physics: const BouncingScrollPhysics(),
           children: [
             // Stats row
             SizedBox(
-              height: 80,
+              height: 90,
               child: ListView(
                 scrollDirection: Axis.horizontal,
+                physics: const BouncingScrollPhysics(),
                 children: [
-                  _miniStat('Total', '${_loans.length}', Colors.blue, Icons.list),
-                  _miniStat('Pending', '${counts['pending']}', Colors.orange, Icons.schedule),
-                  _miniStat('Active', '${counts['active']}', Colors.green, Icons.trending_up),
-                  _miniStat('Outstanding', _fmt(totalActive), Colors.red, Icons.money_off),
+                  _miniStat('Total Requests', '${_loans.length}', const Color(0xFF2563EB), Icons.list_alt_rounded),
+                  _miniStat('Pending', '${counts['pending']}', const Color(0xFFF59E0B), Icons.hourglass_empty_rounded),
+                  _miniStat('Active', '${counts['active']}', const Color(0xFF10B981), Icons.trending_up_rounded),
+                  _miniStat('Outstanding', _fmt(totalActive), const Color(0xFFEF4444), Icons.account_balance_wallet_rounded),
                 ],
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 24),
             // Filter chips
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(),
               child: Row(
                 children: _filterTabs.map((f) {
                   final isSelected = _filter == f;
-                  final count = f == 'all' ? _loans.length : (counts[f] ?? 0);
+                  final bg = isSelected ? const Color(0xFF2563EB) : Colors.white;
+                  final fg = isSelected ? Colors.white : const Color(0xFF475569);
                   return Padding(
-                    padding: const EdgeInsets.only(right: 6),
-                    child: ChoiceChip(
-                      label: Text('${f[0].toUpperCase()}${f.substring(1)} ($count)'),
-                      selected: isSelected,
-                      onSelected: (_) => setState(() => _filter = f),
+                    padding: const EdgeInsets.only(right: 8),
+                    child: InkWell(
+                      onTap: () => setState(() => _filter = f),
+                      borderRadius: BorderRadius.circular(20),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: bg,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: isSelected ? Colors.transparent : Colors.blueGrey.shade100),
+                          boxShadow: isSelected ? [BoxShadow(color: bg.withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 4))] : [],
+                        ),
+                        child: Text(
+                          '${f[0].toUpperCase()}${f.substring(1)}',
+                          style: TextStyle(color: fg, fontWeight: FontWeight.bold, fontSize: 13),
+                        ),
+                      ),
                     ),
                   );
                 }).toList(),
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 24),
             // Loans list
             if (filtered.isEmpty)
-              const Card(child: Padding(padding: EdgeInsets.all(32), child: Center(child: Text('No loans found'))))
+              Container(
+                padding: const EdgeInsets.all(40),
+                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(24), border: Border.all(color: Colors.blueGrey.shade50)),
+                child: Center(child: Text('No loans found matching your filter', style: TextStyle(color: Colors.blueGrey.shade400, fontWeight: FontWeight.w500))),
+              )
             else
               ...filtered.map((l) {
                 final pct = l.totalPayable > 0 ? ((l.totalPayable - l.remainingBalance) / l.totalPayable * 100).round() : 0;
-                return Card(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  child: Padding(
-                    padding: const EdgeInsets.all(12),
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(color: Colors.blueGrey.shade50),
+                    boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4))],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(24),
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Flexible(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                        Padding(
+                          padding: const EdgeInsets.all(20),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Text(l.memberName, style: const TextStyle(fontWeight: FontWeight.bold)),
-                                  if (l.purpose != null && l.purpose!.isNotEmpty)
-                                    Text(l.purpose!, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(l.memberName, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: Color(0xFF0F172A))),
+                                        if (l.purpose != null && l.purpose!.isNotEmpty)
+                                          Text(l.purpose!, style: TextStyle(fontSize: 12, color: Colors.blueGrey.shade500, fontWeight: FontWeight.w500)),
+                                      ],
+                                    ),
+                                  ),
+                                  _buildStatusBadge(l.status),
                                 ],
                               ),
-                            ),
-                            _buildStatusBadge(l.status),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text('Principal: ${_fmt(l.principal)}', style: const TextStyle(fontWeight: FontWeight.w600)),
-                            Text('${l.durationMonths} mo.', style: const TextStyle(fontSize: 13, color: Colors.grey)),
-                          ],
-                        ),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text('Interest: ${_fmt(l.interestAmount)}', style: const TextStyle(fontSize: 13)),
-                            Text('Remaining: ${_fmt(l.remainingBalance)}', style: TextStyle(fontWeight: FontWeight.bold, color: l.remainingBalance > 0 ? Colors.red : Colors.green)),
-                          ],
-                        ),
-                        if (l.status == 'active' || l.status == 'closed') ...[
-                          const SizedBox(height: 6),
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(4),
-                            child: LinearProgressIndicator(
-                              value: pct / 100,
-                              minHeight: 5,
-                              color: pct == 100 ? Colors.green : Colors.blue,
-                              backgroundColor: Colors.grey.shade200,
-                            ),
-                          ),
-                          Text('$pct% repaid', style: const TextStyle(fontSize: 11, color: Colors.grey)),
-                        ],
-                        if (isAdmin && l.status == 'pending') ...[
-                          const SizedBox(height: 8),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            children: [
-                              TextButton.icon(
-                                onPressed: () => _approve(l.id),
-                                icon: const Icon(Icons.check_circle, size: 16, color: Colors.green),
-                                label: const Text('Approve', style: TextStyle(color: Colors.green, fontSize: 13)),
+                              const SizedBox(height: 16),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  _labelValue('Principal', _fmt(l.principal)),
+                                  _labelValue('Remaining', _fmt(l.remainingBalance), color: l.remainingBalance > 0 ? const Color(0xFFEF4444) : const Color(0xFF10B981)),
+                                  _labelValue('Duration', '${l.durationMonths} mo'),
+                                ],
                               ),
-                              const SizedBox(width: 4),
-                              TextButton.icon(
-                                onPressed: () => _reject(l.id),
-                                icon: const Icon(Icons.cancel, size: 16, color: Colors.red),
-                                label: const Text('Reject', style: TextStyle(color: Colors.red, fontSize: 13)),
-                              ),
+                              if (l.status == 'active' || l.status == 'closed') ...[
+                                const SizedBox(height: 16),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text('Payment Progress', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.blueGrey.shade400)),
+                                        Text('$pct%', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: pct == 100 ? const Color(0xFF10B981) : const Color(0xFF2563EB))),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 6),
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(4),
+                                      child: LinearProgressIndicator(
+                                        value: pct / 100,
+                                        minHeight: 6,
+                                        color: pct == 100 ? const Color(0xFF10B981) : const Color(0xFF2563EB),
+                                        backgroundColor: Colors.blueGrey.shade100.withOpacity(0.3),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
                             ],
                           ),
-                        ],
+                        ),
+                        if (isAdmin && l.status == 'pending')
+                          Container(
+                            decoration: BoxDecoration(
+                              color: Colors.blueGrey.shade50.withOpacity(0.3),
+                              border: Border(top: BorderSide(color: Colors.blueGrey.shade50)),
+                            ),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: TextButton.icon(
+                                    onPressed: () => _approve(l.id),
+                                    icon: const Icon(Icons.check_circle_rounded, color: Color(0xFF10B981), size: 20),
+                                    label: const Text('Approve', style: TextStyle(color: Color(0xFF10B981), fontWeight: FontWeight.bold)),
+                                  ),
+                                ),
+                                Container(width: 1, height: 24, color: Colors.blueGrey.shade100),
+                                Expanded(
+                                  child: TextButton.icon(
+                                    onPressed: () => _reject(l.id),
+                                    icon: const Icon(Icons.cancel_rounded, color: Color(0xFFEF4444), size: 20),
+                                    label: const Text('Reject', style: TextStyle(color: Color(0xFFEF4444), fontWeight: FontWeight.bold)),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                       ],
                     ),
                   ),
                 );
               }),
+            const SizedBox(height: 80),
           ],
         ),
       ),
       floatingActionButton: isAdmin
-          ? FloatingActionButton(
+          ? FloatingActionButton.extended(
               onPressed: _showRecordLoanDialog,
-              child: const Icon(Icons.add),
+              backgroundColor: const Color(0xFF2563EB),
+              foregroundColor: Colors.white,
+              icon: const Icon(Icons.add_rounded),
+              label: const Text('Record Loan', style: TextStyle(fontWeight: FontWeight.bold)),
+              elevation: 4,
             )
           : null,
     );
   }
 
+  Widget _labelValue(String label, String value, {Color? color}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.blueGrey.shade400, letterSpacing: 0.5)),
+        const SizedBox(height: 2),
+        Text(value, style: TextStyle(fontSize: 15, fontWeight: FontWeight.w900, color: color ?? const Color(0xFF0F172A), letterSpacing: -0.5)),
+      ],
+    );
+  }
+
   Widget _miniStat(String label, String value, Color color, IconData icon) {
-    return Card(
-      margin: const EdgeInsets.only(right: 8),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: color, size: 18),
-            const SizedBox(height: 4),
-            Text(value, style: TextStyle(fontWeight: FontWeight.bold, color: color, fontSize: 14)),
-            Text(label, style: const TextStyle(fontSize: 10, color: Colors.grey)),
-          ],
-        ),
+    return Container(
+      width: 130,
+      margin: const EdgeInsets.only(right: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.blueGrey.shade50),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4))],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Icon(icon, color: color, size: 16),
+              Text(value, style: TextStyle(fontWeight: FontWeight.w900, color: color, fontSize: 13)),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(label, style: TextStyle(fontSize: 10, color: Colors.blueGrey.shade500, fontWeight: FontWeight.bold)),
+        ],
       ),
     );
   }

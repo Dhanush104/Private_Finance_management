@@ -36,12 +36,14 @@ const recordRepayment = async (req, res, next) => {
     try {
         await conn.beginTransaction();
 
-        const { loan_id, amount, notes } = req.validated.body;
+        const { loan_id, amount, months, notes } = req.validated.body;
 
         const [[loan]] = await conn.query('SELECT * FROM loans WHERE id = ? FOR UPDATE', [loan_id]);
         if (!loan) throw new AppError('Loan not found', 404);
         if (loan.status !== 'active') throw new AppError('Loan is not active', 400);
-        const dynamic = calculateDynamicLoanDetails(loan);
+
+        // Calculate using the admin-provided custom months duration
+        const dynamic = calculateDynamicLoanDetails(loan, months);
         const dynamicRemaining = dynamic.dynamic_remaining_balance;
 
         if (amount > dynamicRemaining + 0.01) {
@@ -79,7 +81,7 @@ const recordRepayment = async (req, res, next) => {
         // Add full repayment amount to group fund (principal returns + interest earned)
         const newFund = await updateGroupFund(
             conn, amount, 'repayment',
-            `Loan #${loan_id} repayment (principal: ${principal_portion}, interest: ${interest_portion})`,
+            `Loan #${loan_id} repayment (principal: ${principal_portion}, interest: ${interest_portion}, for ${months || dynamic.monthsElapsed} months)`,
             loan.user_id, repResult.insertId
         );
 

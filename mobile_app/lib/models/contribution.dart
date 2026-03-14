@@ -21,14 +21,14 @@ class Contribution {
 
   factory Contribution.fromJson(Map<String, dynamic> json) {
     return Contribution(
-      id: json['id'],
-      userId: json['user_id'],
-      memberName: json['member_name'] ?? '',
-      monthYear: json['month_year'],
-      amount: double.tryParse(json['amount'].toString()) ?? 0.0,
-      status: json['status'],
-      paidAt: json['paid_at'],
-      notes: json['notes'],
+      id: json['id'] ?? 0,
+      userId: json['user_id'] ?? 0,
+      memberName: json['member_name'] ?? 'Unknown Member',
+      monthYear: json['month_year'] ?? '',
+      amount: double.tryParse(json['amount']?.toString() ?? '0') ?? 0.0,
+      status: json['status'] ?? 'pending',
+      paidAt: json['paid_at']?.toString(),
+      notes: json['notes']?.toString(),
     );
   }
 }

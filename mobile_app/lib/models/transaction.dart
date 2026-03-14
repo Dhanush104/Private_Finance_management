@@ -19,13 +19,13 @@ class Transaction {
 
   factory Transaction.fromJson(Map<String, dynamic> json) {
     return Transaction(
-      id: json['id'],
-      type: json['type'] ?? '',
-      memberName: json['member_name'],
-      amount: double.tryParse(json['amount'].toString()) ?? 0.0,
-      groupFundAfter: double.tryParse(json['group_fund_after'].toString()) ?? 0.0,
-      description: json['description'] ?? '',
-      createdAt: json['created_at'] ?? '',
+      id: json['id'] ?? 0,
+      type: json['type']?.toString() ?? 'system',
+      memberName: json['member_name']?.toString(),
+      amount: double.tryParse(json['amount']?.toString() ?? '0') ?? 0.0,
+      groupFundAfter: double.tryParse(json['group_fund_after']?.toString() ?? '0') ?? 0.0,
+      description: json['description']?.toString() ?? 'No description',
+      createdAt: json['created_at']?.toString() ?? '',
     );
   }
 }

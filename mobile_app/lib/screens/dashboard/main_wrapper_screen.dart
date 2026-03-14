@@ -68,62 +68,97 @@ class _MainWrapperScreenState extends State<MainWrapperScreen> {
     final isAdmin = auth.isAdmin;
     final currentScreens = _getScreens(isAdmin);
 
-    // If a sub-screen is active (from Admin More), show it with a back button
-    if (_subScreen != null) {
-      return Scaffold(
-        appBar: AppBar(
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back),
-            onPressed: _backFromSub,
-          ),
-          title: Text(_subTitle ?? ''),
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.logout),
-              onPressed: () => auth.logout(),
-              tooltip: 'Sign Out',
-            ),
-          ],
-        ),
-        body: _subScreen,
-      );
-    }
-
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Royal Star Boys'),
+        title: Text(_subTitle ?? 'Royal Star Boys'),
+        leading: _subScreen != null
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back_ios_new, size: 20),
+                onPressed: _backFromSub,
+              )
+            : null,
         actions: [
           IconButton(
-            icon: const Icon(Icons.logout),
+            icon: const Icon(Icons.power_settings_new_rounded),
             onPressed: () => auth.logout(),
             tooltip: 'Sign Out',
           ),
+          const SizedBox(width: 8),
         ],
       ),
-      body: currentScreens[_selectedIndex],
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _selectedIndex,
-        onDestinationSelected: (index) {
-          setState(() {
-            _selectedIndex = index;
-            _subScreen = null;
-            _subTitle = null;
-          });
-        },
-        destinations: isAdmin
-            ? const [
-                NavigationDestination(icon: Icon(Icons.dashboard), label: 'Home'),
-                NavigationDestination(icon: Icon(Icons.credit_card), label: 'Contribs'),
-                NavigationDestination(icon: Icon(Icons.money), label: 'Loans'),
-                NavigationDestination(icon: Icon(Icons.more_horiz), label: 'More'),
-              ]
-            : const [
-                NavigationDestination(icon: Icon(Icons.dashboard), label: 'Home'),
-                NavigationDestination(icon: Icon(Icons.credit_card), label: 'My Contribs'),
-                NavigationDestination(icon: Icon(Icons.money), label: 'My Loans'),
-                NavigationDestination(icon: Icon(Icons.person), label: 'Profile'),
-              ],
-      ),
+      body: _subScreen ?? currentScreens[_selectedIndex],
+      bottomNavigationBar: _subScreen != null
+          ? null
+          : Container(
+              decoration: BoxDecoration(
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, -5),
+                  ),
+                ],
+              ),
+              child: NavigationBar(
+                height: 70,
+                elevation: 0,
+                backgroundColor: Colors.white,
+                selectedIndex: _selectedIndex,
+                labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+                onDestinationSelected: (index) {
+                  setState(() {
+                    _selectedIndex = index;
+                    _subScreen = null;
+                    _subTitle = null;
+                  });
+                },
+                destinations: isAdmin
+                    ? const [
+                        NavigationDestination(
+                          icon: Icon(Icons.grid_view_rounded, size: 24),
+                          selectedIcon: Icon(Icons.grid_view_rounded, size: 24, color: Colors.blue),
+                          label: 'Home',
+                        ),
+                        NavigationDestination(
+                          icon: Icon(Icons.account_balance_wallet_outlined, size: 24),
+                          selectedIcon: Icon(Icons.account_balance_wallet_rounded, size: 24, color: Colors.blue),
+                          label: 'Contribs',
+                        ),
+                        NavigationDestination(
+                          icon: Icon(Icons.payments_outlined, size: 24),
+                          selectedIcon: Icon(Icons.payments_rounded, size: 24, color: Colors.blue),
+                          label: 'Loans',
+                        ),
+                        NavigationDestination(
+                          icon: Icon(Icons.more_horiz_rounded, size: 24),
+                          selectedIcon: Icon(Icons.more_horiz_rounded, size: 24, color: Colors.blue),
+                          label: 'More',
+                        ),
+                      ]
+                    : const [
+                        NavigationDestination(
+                          icon: Icon(Icons.grid_view_rounded, size: 24),
+                          selectedIcon: Icon(Icons.grid_view_rounded, size: 24, color: Colors.blue),
+                          label: 'Home',
+                        ),
+                        NavigationDestination(
+                          icon: Icon(Icons.account_balance_wallet_outlined, size: 24),
+                          selectedIcon: Icon(Icons.account_balance_wallet_rounded, size: 24, color: Colors.blue),
+                          label: 'My Contribs',
+                        ),
+                        NavigationDestination(
+                          icon: Icon(Icons.payments_outlined, size: 24),
+                          selectedIcon: Icon(Icons.payments_rounded, size: 24, color: Colors.blue),
+                          label: 'My Loans',
+                        ),
+                        NavigationDestination(
+                          icon: Icon(Icons.person_outline_rounded, size: 24),
+                          selectedIcon: Icon(Icons.person_rounded, size: 24, color: Colors.blue),
+                          label: 'Profile',
+                        ),
+                      ],
+              ),
+            ),
     );
   }
 }

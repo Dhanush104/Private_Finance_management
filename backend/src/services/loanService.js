@@ -29,22 +29,24 @@ const splitRepayment = (amount, remainingPrincipal, remainingInterest) => {
 /**
  * Calculate dynamic real-time interest based on elapsed time.
  */
-const calculateDynamicLoanDetails = (loan) => {
+const calculateDynamicLoanDetails = (loan, monthsOverride = null) => {
     if (loan.status === 'pending' || loan.status === 'rejected' || !loan.approved_at) {
         return {
             dynamic_interest_amount: 0,
             dynamic_total_payable: loan.principal,
             dynamic_remaining_balance: loan.principal,
+            monthsElapsed: 0,
         };
     }
 
-    // Rough approximation of "months completed". 
-    // Diff in time divided by ms in a 30-day month.
-    const msIn30Days = 30 * 24 * 60 * 60 * 1000;
-    const diff = new Date() - new Date(loan.approved_at);
-    // At least 1 month of interest always applies as soon as approved. Max out at configured duration_months for normal schedule, or unbounded if late?
-    // User requested "how many months are completed... to current date". Let's allow it to exceed duration if they are late.
-    const monthsElapsed = Math.max(1, Math.ceil(diff / msIn30Days));
+    let monthsElapsed;
+    if (monthsOverride !== null && monthsOverride !== undefined) {
+        monthsElapsed = monthsOverride;
+    } else {
+        const msIn30Days = 30 * 24 * 60 * 60 * 1000;
+        const diff = new Date() - new Date(loan.approved_at);
+        monthsElapsed = Math.max(1, Math.ceil(diff / msIn30Days));
+    }
 
     const principal = parseFloat(loan.principal);
     const interestRate = parseFloat(loan.interest_rate);

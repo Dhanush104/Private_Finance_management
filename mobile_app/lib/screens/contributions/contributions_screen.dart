@@ -178,13 +178,38 @@ class _ContributionsScreenState extends State<ContributionsScreen> {
 
   Widget _buildStatusBadge(String status) {
     Color bg = Colors.grey;
-    if (status == 'paid') bg = Colors.green;
-    if (status == 'pending') bg = Colors.orange;
-    if (status == 'missed') bg = Colors.red;
+    IconData icon = Icons.help_outline_rounded;
+    if (status == 'paid') {
+      bg = const Color(0xFF10B981);
+      icon = Icons.check_circle_rounded;
+    }
+    if (status == 'pending') {
+      bg = const Color(0xFFF59E0B);
+      icon = Icons.access_time_filled_rounded;
+    }
+    if (status == 'missed') {
+      bg = const Color(0xFFEF4444);
+      icon = Icons.error_rounded;
+    }
+    
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(color: bg.withOpacity(0.15), borderRadius: BorderRadius.circular(12)),
-      child: Text(status.toUpperCase(), style: TextStyle(color: bg, fontWeight: FontWeight.bold, fontSize: 11)),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: bg.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: bg.withOpacity(0.2), width: 1),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: bg),
+          const SizedBox(width: 4),
+          Text(
+            status.toUpperCase(),
+            style: TextStyle(color: bg, fontWeight: FontWeight.w800, fontSize: 10, letterSpacing: 0.5),
+          ),
+        ],
+      ),
     );
   }
 
@@ -194,59 +219,96 @@ class _ContributionsScreenState extends State<ContributionsScreen> {
     final isAdmin = context.read<AuthProvider>().isAdmin;
 
     return Scaffold(
+      backgroundColor: const Color(0xFFF8FAFC),
+      appBar: AppBar(
+        title: const Text('Contributions', style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: -0.5)),
+        backgroundColor: Colors.transparent,
+        scrolledUnderElevation: 0,
+      ),
       body: RefreshIndicator(
         onRefresh: _fetchAll,
+        edgeOffset: 20,
         child: _contributions.isEmpty
-            ? const Center(child: Text('No contributions recorded yet'))
+            ? Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.history_rounded, size: 64, color: Colors.blueGrey.shade200),
+                    const SizedBox(height: 16),
+                    Text('No contributions yet', style: TextStyle(color: Colors.blueGrey.shade400, fontSize: 16, fontWeight: FontWeight.w500)),
+                  ],
+                ),
+              )
             : ListView.builder(
-                padding: const EdgeInsets.all(8.0),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                physics: const BouncingScrollPhysics(),
                 itemCount: _contributions.length,
                 itemBuilder: (context, index) {
                   final c = _contributions[index];
-                  return Card(
-                    child: ListTile(
-                      title: Row(
-                        children: [
-                          Flexible(child: Text(c.memberName, style: const TextStyle(fontWeight: FontWeight.w600))),
-                          const SizedBox(width: 6),
-                          Text(c.monthYear, style: const TextStyle(fontSize: 12, color: Colors.grey)),
-                        ],
-                      ),
-                      subtitle: Row(
-                        children: [
-                          Text('₹${c.amount.toStringAsFixed(0)}', style: const TextStyle(fontWeight: FontWeight.bold)),
-                          if (c.paidAt != null) ...[
-                            const SizedBox(width: 8),
-                            Text(
-                              DateTime.tryParse(c.paidAt!)?.toLocal().toString().substring(0, 10) ?? '',
-                              style: const TextStyle(fontSize: 11, color: Colors.grey),
-                            ),
-                          ],
-                        ],
-                      ),
-                      trailing: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          _buildStatusBadge(c.status),
-                          if (isAdmin && c.status == 'pending')
-                            Padding(
-                              padding: const EdgeInsets.only(top: 4.0),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  InkWell(
-                                    onTap: () => _approve(c.id),
-                                    child: const Icon(Icons.check_circle, color: Colors.green, size: 22),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  InkWell(
-                                    onTap: () => _reject(c.id),
-                                    child: const Icon(Icons.cancel, color: Colors.red, size: 22),
-                                  ),
-                                ],
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 14),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4)),
+                      ],
+                      border: Border.all(color: Colors.blueGrey.shade50),
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(20),
+                      child: IntrinsicHeight(
+                        child: Row(
+                          children: [
+                            Container(width: 6, color: c.status == 'paid' ? const Color(0xFF10B981) : (c.status == 'pending' ? const Color(0xFFF59E0B) : const Color(0xFFEF4444))),
+                            Expanded(
+                              child: ListTile(
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                title: Text(c.memberName, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: Color(0xFF1E293B))),
+                                subtitle: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const SizedBox(height: 4),
+                                    Row(
+                                      children: [
+                                        Icon(Icons.calendar_today_rounded, size: 12, color: Colors.blueGrey.shade300),
+                                        const SizedBox(width: 4),
+                                        Text(c.monthYear, style: TextStyle(fontSize: 12, color: Colors.blueGrey.shade500, fontWeight: FontWeight.w600)),
+                                      ],
+                                    ),
+                                    if (c.paidAt != null) ...[
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        'Paid: ${DateTime.tryParse(c.paidAt!)?.toLocal().toString().substring(0, 10) ?? ''}',
+                                        style: TextStyle(fontSize: 11, color: Colors.blueGrey.shade400, fontStyle: FontStyle.italic),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                                trailing: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    Text('₹${c.amount.toStringAsFixed(0)}', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: Color(0xFF1E293B), letterSpacing: -0.5)),
+                                    const SizedBox(height: 6),
+                                    _buildStatusBadge(c.status),
+                                  ],
+                                ),
                               ),
                             ),
-                        ],
+                            if (isAdmin && c.status == 'pending')
+                              Container(
+                                decoration: BoxDecoration(border: Border(left: BorderSide(color: Colors.blueGrey.shade50))),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    IconButton(onPressed: () => _approve(c.id), icon: const Icon(Icons.check_circle_rounded, color: Colors.green, size: 28)),
+                                    IconButton(onPressed: () => _reject(c.id), icon: const Icon(Icons.cancel_rounded, color: Colors.red, size: 28)),
+                                  ],
+                                ),
+                              ),
+                          ],
+                        ),
                       ),
                     ),
                   );
@@ -254,9 +316,13 @@ class _ContributionsScreenState extends State<ContributionsScreen> {
               ),
       ),
       floatingActionButton: isAdmin
-          ? FloatingActionButton(
+          ? FloatingActionButton.extended(
               onPressed: _showRecordContributionDialog,
-              child: const Icon(Icons.add),
+              backgroundColor: const Color(0xFF2563EB),
+              foregroundColor: Colors.white,
+              icon: const Icon(Icons.add_rounded),
+              label: const Text('Record', style: TextStyle(fontWeight: FontWeight.bold)),
+              elevation: 4,
             )
           : null,
     );

@@ -11,16 +11,18 @@ export default function RepaymentsPage() {
     const [activeLoans, setActiveLoans] = useState([]);
     const [loading, setLoading] = useState(true);
     const [modal, setModal] = useState(false);
-    const [form, setForm] = useState({ loan_id: '', amount: '', notes: '' });
+    const [form, setForm] = useState({ loan_id: '', amount: '', months: '', notes: '' });
     const [selectedLoan, setSelectedLoan] = useState(null);
     const [saving, setSaving] = useState(false);
     const socketRef = useSocket();
 
     const fetchAll = async () => {
         try {
-            const [rRes, lRes] = await Promise.all([api.get('/repayments'), api.get('/loans')]);
+            const [rRes, lRes, gRes] = await Promise.all([api.get('/repayments'), api.get('/loans'), api.get('/group')]);
             setRepayments(rRes.data.repayments);
             setActiveLoans(lRes.data.loans.filter(l => l.status === 'active'));
+            // Cache interest rate from group config for live previews
+            if (!window.gConfig) window.gConfig = gRes.data.config.interest_rate;
         } finally { setLoading(false); }
     };
     useEffect(() => { fetchAll(); }, []);
@@ -35,15 +37,15 @@ export default function RepaymentsPage() {
         const id = Number(e.target.value);
         const loan = activeLoans.find(l => l.id === id);
         setSelectedLoan(loan || null);
-        setForm(f => ({ ...f, loan_id: id, amount: loan ? loan.remaining_balance : '' }));
+        setForm(f => ({ ...f, loan_id: id, amount: '', months: '' }));
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault(); setSaving(true);
         try {
-            const r = await api.post('/repayments', { loan_id: Number(form.loan_id), amount: Number(form.amount), notes: form.notes });
+            const r = await api.post('/repayments', { loan_id: Number(form.loan_id), amount: Number(form.amount), months: Number(form.months), notes: form.notes });
             toast.success(r.data.loan_closed ? '✅ Loan fully repaid and closed!' : 'Repayment recorded!');
-            setModal(false); setForm({ loan_id: '', amount: '', notes: '' }); setSelectedLoan(null);
+            setModal(false); setForm({ loan_id: '', amount: '', months: '', notes: '' }); setSelectedLoan(null);
             fetchAll();
         } catch (err) { toast.error(err.response?.data?.message || 'Error'); }
         finally { setSaving(false); }
@@ -99,14 +101,26 @@ export default function RepaymentsPage() {
                             </div>
                             {selectedLoan && (
                                 <div style={{ background: 'var(--bg3)', borderRadius: 8, padding: '.75rem 1rem', marginBottom: '1rem', fontSize: '.85rem' }}>
-                                    <div className="flex gap-3"><span className="text-muted">Principal:</span><strong>{fmt(selectedLoan.principal)}</strong></div>
-                                    <div className="flex gap-3"><span className="text-muted">Total Payable:</span><strong>{fmt(selectedLoan.total_payable)}</strong></div>
-                                    <div className="flex gap-3"><span className="text-muted">Remaining:</span><strong style={{ color: '#ef4444' }}>{fmt(selectedLoan.remaining_balance)}</strong></div>
+                                    <div className="flex gap-3"><span className="text-muted">Principal Disbursed:</span><strong>{fmt(selectedLoan.principal)}</strong></div>
+                                    {form.months ? (
+                                        <>
+                                            <div className="flex gap-3"><span className="text-muted">Calculated Interest ({form.months}mo):</span><strong style={{ color: '#f59e0b' }}>{fmt(Number(selectedLoan.principal) * (window.gConfig || 0) * Number(form.months) / 100)}</strong></div>
+                                            <div className="flex gap-3"><span className="text-muted">Total Payable:</span><strong style={{ color: '#ef4444' }}>{fmt(Number(selectedLoan.principal) + (Number(selectedLoan.principal) * (window.gConfig || 0) * Number(form.months) / 100))}</strong></div>
+                                        </>
+                                    ) : (
+                                        <div className="text-muted text-sm mt-1"><em>Enter months below to calculate remaining interest</em></div>
+                                    )}
                                 </div>
                             )}
-                            <div className="form-group">
-                                <label className="form-label">Amount (₹) *</label>
-                                <input type="number" required min="1" step="0.01" className="form-control" value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })} />
+                            <div className="grid-2">
+                                <div className="form-group">
+                                    <label className="form-label">Duration (months) *</label>
+                                    <input type="number" required min="0" max="120" className="form-control" value={form.months} onChange={e => setForm({ ...form, months: e.target.value })} placeholder="e.g. 3" />
+                                </div>
+                                <div className="form-group">
+                                    <label className="form-label">Amount Paid (₹) *</label>
+                                    <input type="number" required min="1" step="0.01" className="form-control" value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })} />
+                                </div>
                             </div>
                             <div className="form-group">
                                 <label className="form-label">Notes</label>

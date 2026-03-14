@@ -1,5 +1,5 @@
 import { useLocation } from 'react-router-dom';
-import { Bell } from 'lucide-react';
+import { Bell, Menu } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 const titles = {
@@ -15,16 +15,21 @@ const titles = {
     '/my-profile': 'My Profile',
 };
 
-export default function Navbar() {
+export default function Navbar({ onMenuClick }) {
     const { pathname } = useLocation();
     const { user } = useAuth();
     const title = titles[pathname] || 'Royal Star Boys';
 
     return (
         <header className="topbar">
-            <div>
-                <h1 className="topbar-title">{title}</h1>
-                <p className="topbar-sub">Royal Star Boys • Private Fund Management</p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <button className="icon-btn mobile-menu-btn" onClick={onMenuClick} title="Open Menu">
+                    <Menu size={20} />
+                </button>
+                <div>
+                    <h1 className="topbar-title">{title}</h1>
+                    <p className="topbar-sub">Royal Star Boys • Private Fund Management</p>
+                </div>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                 <button className="icon-btn" title="Notifications">

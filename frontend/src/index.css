@@ -197,6 +197,18 @@ a {
 }
 
 /* ═══════════════════════════════════════════════
+   SIDEBAR OVERLAY
+═══════════════════════════════════════════════ */
+.sidebar-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  z-index: 999;
+  animation: fadeIn 0.3s ease;
+}
+
+/* ═══════════════════════════════════════════════
    TOP NAV BAR
 ═══════════════════════════════════════════════ */
 .topbar {
@@ -421,6 +433,13 @@ a {
   box-shadow: none !important;
 }
 
+@media (max-width: 480px) {
+  .btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
 /* ═══════════════════════════════════════════════
    FORMS
 ═══════════════════════════════════════════════ */
@@ -464,6 +483,12 @@ a {
 .form-control[readonly] {
   opacity: .7;
   cursor: not-allowed;
+}
+
+@media (max-width: 600px) {
+  .form-group {
+    margin-bottom: 0.85rem;
+  }
 }
 
 /* ═══════════════════════════════════════════════
@@ -587,6 +612,13 @@ tbody tr:hover td:first-child {
   gap: 1rem;
 }
 
+@media (max-width: 600px) {
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
 .page-title {
   font-size: 1.6rem;
   font-weight: 800;
@@ -636,7 +668,7 @@ tbody tr:hover td:first-child {
   }
 }
 
-@media (max-width: 700px) {
+@media (max-width: 768px) {
 
   .grid-2,
   .grid-3,

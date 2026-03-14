@@ -702,9 +702,13 @@
 }
 
 /* Responsive nav */
-@media (max-width: 600px) {
+@media (max-width: 768px) {
     .lp-nav {
-        padding: 1rem 1.25rem;
+        padding: 1rem 1.5rem;
+    }
+
+    .lp-hero-title {
+        font-size: 2.2rem;
     }
 
     .lp-hero {
@@ -719,5 +723,20 @@
 
     .lp-cta-card {
         padding: 2rem 1.25rem;
+    }
+
+    .lp-features {
+        padding: 3rem 1.25rem;
+    }
+
+    .lp-hero-btns {
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .lp-hero-btns .lp-btn-primary,
+    .lp-hero-btns .lp-btn-ghost {
+        width: 100%;
+        justify-content: center;
     }
 }
